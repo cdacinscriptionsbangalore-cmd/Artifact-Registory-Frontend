@@ -2,6 +2,8 @@ import React, { useState, useRef } from "react";
 import type { ChangeEvent } from "react";
 import { Camera, MapPin, Upload, X } from "lucide-react";
 // import { getTokenFromCookie } from "@/utils/cookieUtils";
+const backendDetectUrl = import.meta.env.VITE_BACKEND_AI_URL;
+const backendApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 // Types
 interface GeoInfo {
@@ -268,7 +270,7 @@ const EnhancedInscriptionUploader: React.FC = () => {
       formData.append("file", blob, "inscription.jpg");
 
       // return true;
-      const response = await fetch("http://10.182.6.144:8000/predict/", {
+      const response = await fetch(`${backendDetectUrl}predict/`, {
         method: "POST",
         body: formData,
       });
@@ -433,7 +435,7 @@ const EnhancedInscriptionUploader: React.FC = () => {
 
       form.append("post", new Blob([JSON.stringify(postData)], { type: "application/json" }));
 
-      const response = await fetch("http://localhost:8080/post/addPostWithFile", {
+      const response = await fetch(`${backendApiUrl}post/addPostWithFile`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`

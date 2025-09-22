@@ -7,7 +7,7 @@ import { useParams } from 'react-router-dom';
 import Model from './Model';
 import ImageCarousel from './ImageCarousel';
 
-
+const backendApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 
 
 export interface Comment {
@@ -102,7 +102,7 @@ useEffect(() => {
     try {
       setLoading(true);
       const token = getCookie('token');
-      const response = await fetch('http://localhost:8080/post/getAllPost', {
+      const response = await fetch(`${backendApiUrl}post/getAllPost`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +151,7 @@ useEffect(() => {
         redirect: "follow"
       };
 
-      const response = await fetch("http://localhost:8080/post/getPostDiscription", requestOptions)
+      const response = await fetch(`${backendApiUrl}post/getPostDiscription`, requestOptions)
 
       const data = await response.json();
       const fetchedComments = Array.isArray(data.data) ? data.data : [];
@@ -183,7 +183,7 @@ const submitRatingToAPI = async (postId: string, rating: number): Promise<string
     body: urlencoded,
     redirect: 'follow'
   };
-  const response = await fetch("http://localhost:8080/post/addRating", requestOptions);
+  const response = await fetch(`${backendApiUrl}post/addRating`, requestOptions);
   if (!response.ok) {
     throw new Error(`Error: ${response.statusText}`);
   }

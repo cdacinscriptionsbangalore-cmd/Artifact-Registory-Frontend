@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import type { Comment } from "./InscriptionDetailPage";
 import type { User } from "@/types";
 
+const backendApiUrl = import.meta.env.VITE_BACKEND_API_URL;
+
 interface CommentCardProps{
     comments: Comment;
 }
@@ -49,7 +51,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comments }) => {
     setLikes((prev) => prev + (isLiked ? -1 : 1));
 
     try {
-      const response = await fetch("http://localhost:8080/post/addVote", requestOptions);
+      const response = await fetch(`${backendApiUrl}post/addVote`, requestOptions);
       const result = await response.text();
       console.log(result);
       // Optionally, you can refetch the comment or update userVote array here
@@ -87,7 +89,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comments }) => {
             body: urlencoded,
             redirect: "follow"
           };
-          const response = await fetch('http://localhost:8080/post/userProfile', requestOptions)
+          const response = await fetch(`${backendApiUrl}/post/userProfile`, requestOptions)
           
           const data = await response.json();
           SetUserDetails(data.data);

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import FilterBar from './FilterBar';
 import DiscoveryCard from './DiscoveryCard';
+const backendApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 // import { getTokenFromCookie } from '@/utils/cookieUtils';
 
 export interface Post {
@@ -54,7 +55,7 @@ const Feed = () => {
     const fetchPosts = async () => {
       try {
         const token = getCookie('token');
-        const response = await fetch('http://localhost:8080/post/getAllPost', {
+        const response = await fetch(`${backendApiUrl}post/getAllPost`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

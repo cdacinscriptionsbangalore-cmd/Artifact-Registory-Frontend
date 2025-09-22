@@ -2,6 +2,8 @@
 import type React from "react";
 import { useState } from "react";
 
+const backendApiUrl = import.meta.env.VITE_BACKEND_API_URL;
+
 interface ModelProps {
   postId: string;
   display: boolean;
@@ -46,7 +48,7 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose }) => {
       redirect: "follow"
     };
 
-    const response = await fetch("http://localhost:8080/post/addPoastDiscription", requestOptions)
+    const response = await fetch(`${backendApiUrl}post/addPoastDiscription`, requestOptions)
 
     if (!response.ok) {
       const errorText = await response.text(); // or response.json() if backend returns JSON

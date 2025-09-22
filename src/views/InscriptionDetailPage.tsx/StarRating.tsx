@@ -3,6 +3,8 @@ import { Star } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 
+const backendApiUrl = import.meta.env.VITE_BACKEND_API_URL;
+
 interface StarRatingProps {
     rating: number;
     size?: string;
@@ -69,7 +71,7 @@ const submitRatingToAPI = async (postId: string, rating: number): Promise<string
   };
 
   try {
-    const response = await fetch("http://localhost:8080/post/addRating", requestOptions);
+    const response = await fetch(`${backendApiUrl}post/addRating`, requestOptions);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

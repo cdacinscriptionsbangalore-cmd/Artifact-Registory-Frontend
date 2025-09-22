@@ -3,6 +3,8 @@ import type { ChangeEvent } from 'react';
 import { Camera, MapPin, ChevronDown } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
+const backendDetectUrl = import.meta.env.VITE_BACKEND_AI_URL;
+
 // Types
 interface GeoInfo {
   hasGPS: boolean;
@@ -153,7 +155,7 @@ const detectStoneInscription = async (file: File): Promise<boolean> => {
   formData.append('file', file);
 
   try {
-    const response = await fetch('http://10.182.6.144:8000/predict', {
+    const response = await fetch(`${backendDetectUrl}/predict`, {
       method: 'POST',
       body: formData,
     });

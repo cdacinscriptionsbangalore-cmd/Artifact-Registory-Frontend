@@ -17,9 +17,9 @@ const MainRoutes = {
     {
       index: true,
       element: (
-        <ProtectedRoute>
+        // <ProtectedRoute>
           <Navigate to="home" replace />
-        </ProtectedRoute>
+        // </ProtectedRoute>
       )
     },
     {

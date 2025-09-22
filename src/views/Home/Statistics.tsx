@@ -2,6 +2,8 @@ import { Award, BookOpen, Globe, Users } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 
+const backendApiUrl = import.meta.env.VITE_BACKEND_API_URL;
+
 const Statistics: React.FC = () => {
     const statistics = [
         { icon: BookOpen, label: "totalPosts", value: "12,456", color: "text-blue-400" },
@@ -15,7 +17,7 @@ const Statistics: React.FC = () => {
     useEffect(() => {
         const fetchStatistics = async () => {
             try{
-                const response = await fetch('http://localhost:8080/post/public/getDashboardCounts', {
+                const response = await fetch(`${backendApiUrl}post/public/getDashboardCounts`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',

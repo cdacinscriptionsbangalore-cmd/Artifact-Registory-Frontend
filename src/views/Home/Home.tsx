@@ -20,9 +20,9 @@ const HomePage: React.FC = () => {
       </FadeInWrapper>
 
       {/* Statistics */}
-      {/* <FadeInWrapper>
+      <FadeInWrapper>
         <Statistics/>
-      </FadeInWrapper> */}
+      </FadeInWrapper>
 
       {/* Featured Inscriptions Carousel */}
       <FadeInWrapper>

@@ -4,6 +4,8 @@ import StatsGrid from './StatsGrid';
 import ImageGallery from './ImageGallery';
 import ContributionsList from './ContributionsList';
 import { Suspense, use, useEffect, useState } from 'react';
+
+const backendApiUrl = import.meta.env.VITE_BACKEND_API_URL;
 // Mock data based on your data structure
 
 
@@ -48,7 +50,7 @@ const Profile = () => {
 
     const fetchPosts = async () => {
       try {
-        const response = await fetch('http://localhost:8080/post/userProfile', {
+        const response = await fetch(`${backendApiUrl}post/userProfile`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -67,7 +69,7 @@ const Profile = () => {
 
     const fetchAllPosts = async () => {
       try {
-        const response = await fetch('http://localhost:8080/post/getAllUserPost', {
+        const response = await fetch(`${backendApiUrl}post/getAllUserPost`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -86,7 +88,7 @@ const Profile = () => {
 
     const fetchAllComments = async () => {
       try {
-        const response = await fetch('http://localhost:8080/post/getCommentByUser', {
+        const response = await fetch(`${backendApiUrl}post/getCommentByUser`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -151,7 +153,7 @@ const Profile = () => {
 //       const fetchPosts = async () => {
 //         try {
 //           const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoidXNlciIsImV4cCI6MTc1NzAwOTIxMSwidXNlciI6Im5pbmpha2Fua2FpMUBnbWFpbC5jb20iLCJpYXQiOjE3NTY5MjI4MTF9.uJltW2Slu-R147-ZU0hLM3mpjctlRJcHEwCBrtbO1_0'
-//           const response = await fetch('http://localhost:8080/post/userProfile', {
+//           const response = await fetch('http://localhost/post/userProfile', {
 //             method: 'POST',
 //             headers: {
 //               'Content-Type': 'application/json',
@@ -173,7 +175,7 @@ const Profile = () => {
 //       const fetchAllPosts = async () => {
 //         try {
 //           const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoidXNlciIsImV4cCI6MTc1NzAwOTIxMSwidXNlciI6Im5pbmpha2Fua2FpMUBnbWFpbC5jb20iLCJpYXQiOjE3NTY5MjI4MTF9.uJltW2Slu-R147-ZU0hLM3mpjctlRJcHEwCBrtbO1_0'
-//           const response = await fetch('http://localhost:8080/post/getAllUserPost', {
+//           const response = await fetch('http://localhost/post/getAllUserPost', {
 //             method: 'POST',
 //             headers: {
 //               'Content-Type': 'application/json',
@@ -195,7 +197,7 @@ const Profile = () => {
 //       const fetchAllComments = async () => {
 //         try {
 //           const token = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoidXNlciIsImV4cCI6MTc1NzAwOTIxMSwidXNlciI6Im5pbmpha2Fua2FpMUBnbWFpbC5jb20iLCJpYXQiOjE3NTY5MjI4MTF9.uJltW2Slu-R147-ZU0hLM3mpjctlRJcHEwCBrtbO1_0'
-//           const response = await fetch('http://localhost:8080/post/getCommentByUser', {
+//           const response = await fetch('http://localhost/post/getCommentByUser', {
 //             method: 'POST',
 //             headers: {
 //               'Content-Type': 'application/json',

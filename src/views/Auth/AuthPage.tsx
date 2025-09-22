@@ -1,22 +1,24 @@
 import React from "react";
-import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
-import { redirect } from "react-router-dom";
+// import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+// import { jwtDecode } from "jwt-decode";
+// import { redirect } from "react-router-dom";
+
+const redirectURL = import.meta.env.VITE_REDIRECT_URL;
 
 const AuthPage: React.FC = () => {
-  const handleLoginSuccess = (credentialResponse: any) => {
-    if (credentialResponse.credential) {
-      const decoded: any = jwtDecode(credentialResponse.credential);
-      console.log("User Info:", decoded);
-      // You can send credentialResponse.credential to your backend for verification
-    }
-  };
+  // const handleLoginSuccess = (credentialResponse: any) => {
+  //   if (credentialResponse.credential) {
+  //     const decoded: any = jwtDecode(credentialResponse.credential);
+  //     console.log("User Info:", decoded);
+  //     // You can send credentialResponse.credential to your backend for verification
+  //   }
+  // };
 
-  const handleLoginFailure = () => {
-    console.error("Login Failed");
-  };
+  // const handleLoginFailure = () => {
+  //   console.error("Login Failed");
+  // };
   const handleGoogleLogin = () => {
-window.location.href = "http://localhost:8080/oauth2/login/google";
+window.location.href = redirectURL;
   }
 
   return (
