@@ -20,5 +20,5 @@ export const logout = (): void => {
     window.location.reload();
   }, 1000);
   // Redirect to login
-  // window.location.href = '/login';
+  window.location.href = '/login';
 };
