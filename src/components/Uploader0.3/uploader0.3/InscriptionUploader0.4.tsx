@@ -443,13 +443,31 @@ const EnhancedInscriptionUploader: React.FC = () => {
         method: "POST",
         body: formData,
       });
-      const data = await response.json();
 
-      setStoneCheckResult(data.result);
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (err) {
+        // non-JSON response
+        setError("Failed to validate image: unexpected server response.");
+        return false;
+      }
 
-      if (data.result === "Stone Inscription") {
+      // Backend may return suspicious content detail
+      if (data?.detail && typeof data.detail === "string") {
+        if (data.detail.toLowerCase().includes("suspicious content")) {
+          setStoneCheckResult("Suspicious content detected");
+          setError("Upload restricted: Suspicious content detected in file.");
+          return false;
+        }
+      }
+
+      // Normal classification result path
+      if (data?.result === "Stone Inscription") {
+        setStoneCheckResult(data.result);
         return true;
       } else {
+        setStoneCheckResult(data?.result || "Not a Stone Inscription");
         setError("Upload restricted: Not a Stone Inscription.");
         return false;
       }
@@ -955,6 +973,7 @@ const EnhancedInscriptionUploader: React.FC = () => {
 
 export default EnhancedInscriptionUploader;
 
+//
 // ============================================================================
 // INSTALLATION NOTES AND SETUP INSTRUCTIONS
 // ============================================================================
