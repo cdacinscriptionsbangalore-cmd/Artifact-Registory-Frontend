@@ -1,40 +1,52 @@
 import extractEXIFData from "../utils/Camera/extractEXIFData";
+import verifyGPSInImage from '../utils/GPS/verifyGPSInImage';
 
+interface FileUploadResult {
+  newPhotos: string[];
+  errorMessages: string[];
+}
 
-export const useFileUpload = (onUpload: any, checkStoneCallback: any) => {
-  const handleFileUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
+export const useFileUpload = (
+  onFileUploadData: (exifData: any, hasGPS: boolean) => void,
+  onStoneCheck?: (imageDataUrl: string) => void
+) => {
+  const handleFileUpload = async (files: FileList | null): Promise<FileUploadResult | null> => {
+    if (!files) return null;
 
     const newPhotos: string[] = [];
     const errorMessages: string[] = [];
 
-    for (const [idx, file] of Array.from(files).entries()) {
+    for (let i = 0; i < files.length; i++) {
       try {
+        const file = files[i];
         const reader = new FileReader();
-        await new Promise<void>((resolve) => {
-          reader.onload = async () => {
-            const photoDataUrl = reader.result as string;
-            const isStone = await checkStoneCallback(photoDataUrl);
-            
-            if (!isStone) {
-              errorMessages.push(`File ${idx + 1} is not a stone inscription.`);
-              return resolve();
-            }
-            
-            newPhotos.push(photoDataUrl);
-            
-            const exifData = await extractEXIFData(file);
-            if (exifData?.hasGPS) {
-              onUpload(newPhotos, exifData, true);
-            } else {
-              onUpload(newPhotos, null, false);
-            }
-            resolve();
-          };
+
+        const imageDataUrl = await new Promise<string>((resolve, reject) => {
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = (e) => reject(e);
           reader.readAsDataURL(file);
         });
-      } catch (err) {
-        errorMessages.push(`Failed to read file ${idx + 1}.`);
+
+        // Verify GPS data in the image
+        const gpsResult = verifyGPSInImage(imageDataUrl);
+        
+        // Pass GPS data to parent component
+        onFileUploadData(gpsResult.allExif, gpsResult.hasGPS);
+
+        if (!gpsResult.hasGPS) {
+          errorMessages.push(`Warning: No GPS data found in image ${file.name}`);
+        }
+
+        newPhotos.push(imageDataUrl);
+
+        // If stone check is enabled, perform it
+        if (onStoneCheck) {
+          onStoneCheck(imageDataUrl);
+        }
+
+      } catch (error) {
+        console.error('Error processing file:', error);
+        errorMessages.push(`Failed to process ${files[i].name}`);
       }
     }
 

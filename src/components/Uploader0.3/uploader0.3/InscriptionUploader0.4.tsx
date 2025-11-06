@@ -15,6 +15,7 @@ import InscriptionForm from "../components/InscriptionForm";
 import { useInscriptionUploader } from "../hooks/UseInscriptionUploader";
 import { checkStoneInscription } from "../Services/inscriptionService";
 import { useCamera } from "../hooks/UseCamera";
+import piexifjs from 'piexifjs';
 
 const EnhancedInscriptionUploader: React.FC = () => {
   const {
@@ -59,13 +60,20 @@ const EnhancedInscriptionUploader: React.FC = () => {
   };
 
   // const handleFileUploadData = (newPhotos: string[], exifData: any, hasGPS: boolean) => {
-  const handleFileUploadData = ( exifData: any, hasGPS: boolean) => {
-    if (hasGPS && exifData) {
+  const handleFileUploadData = (exifData: any, hasGPS: boolean) => {
+    if (hasGPS && exifData?.GPS) {
+      const coordinates = {
+        latitude: exifData.GPS[piexifjs.GPSIFD.GPSLatitude],
+        longitude: exifData.GPS[piexifjs.GPSIFD.GPSLongitude],
+        timestamp: exifData.GPS[piexifjs.GPSIFD.GPSTimeStamp],
+      };
+      
       setHasGeoData(true);
-      setGeoInfo(exifData);
+      setGeoInfo(coordinates);
     } else {
       setHasGeoData(false);
       setGeoInfo(null);
+      setError("No GPS data found in uploaded image");
     }
   };
 

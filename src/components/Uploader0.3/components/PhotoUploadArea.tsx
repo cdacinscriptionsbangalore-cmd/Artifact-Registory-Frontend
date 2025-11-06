@@ -17,7 +17,10 @@ export const PhotoUploadArea = ({
     <div className="w-full h-64 flex flex-col items-center justify-center border-2 border-dashed border-gray-600 rounded-lg">
       <Camera size={48} className="text-orange-500 mb-4" />
       <p className="text-gray-400 text-center text-sm">
-        Capture photos with embedded GPS coordinates
+        Capture or upload photos with GPS coordinates
+      </p>
+      <p className="text-gray-500 text-center text-xs mt-2">
+        Images with existing GPS data will be automatically detected
       </p>
     </div>
     <div className="flex gap-3">
