@@ -49,14 +49,14 @@ const Feed = () => {
     const fetchPosts = async () => {
       try {
         const token = getCookie('token');
-        const xsrfToken = getCookie("XSRF-TOKEN");
+        // const xsrfToken = getCookie("XSRF-TOKEN");
         const response = await fetch(`${backendApiUrl}post/getAllPost`, {
           credentials: 'include',
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
-            "X-XSRF-TOKEN": xsrfToken || ""
+            "X-XSRF-TOKEN": getCookie('XSRF-TOKEN') || ''
           },
           body: JSON.stringify({}),
         });

@@ -9,9 +9,25 @@ import CallToAction from "./CallToAction";
 import Footer from "./Footer";
 import FadeInWrapper from "../../components/FadeInWrapper";
 import "../../styles/fadeIn.css";
+import { useEffect } from "react";
+import axios from "axios";
+import { getEnvConfig } from "@/config/env";
+import { getCookie } from "@/utils/Auth/auth";
 
 
 const HomePage: React.FC = () => {
+  
+  useEffect(() => {
+    const { backendApiUrl } = getEnvConfig();
+    
+     if (!getCookie('XSRF-TOKEN')) {
+      
+      axios.get(`${backendApiUrl}oauth2/login/csrf-token`, {
+        withCredentials: true
+      });
+
+  }},[])
+
   return (
     <>
       {/* Hero Section */}
