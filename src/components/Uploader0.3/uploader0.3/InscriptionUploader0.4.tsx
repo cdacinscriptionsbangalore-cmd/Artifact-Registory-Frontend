@@ -15,7 +15,8 @@ import InscriptionForm from "../components/InscriptionForm";
 import { useInscriptionUploader } from "../hooks/UseInscriptionUploader";
 import { checkStoneInscription } from "../Services/inscriptionService";
 import { useCamera } from "../hooks/UseCamera";
-import piexifjs from 'piexifjs';
+// declare module 'piexifjs';
+const piexifjs: any = require('piexifjs');
 
 const EnhancedInscriptionUploader: React.FC = () => {
   const {
@@ -35,7 +36,7 @@ const EnhancedInscriptionUploader: React.FC = () => {
   const handlePhotoCapture = (photoDataUrl: string, locationData: any, hasGPS: boolean) => {
     setPhotos(prev => [...prev, photoDataUrl]);
     if (hasGPS && locationData) {
-      setGeoInfo(locationData);
+      setGeoInfo({ ...locationData, hasGPS: true });
       setHasGeoData(true);
     } else {
       setHasGeoData(false);
@@ -69,7 +70,7 @@ const EnhancedInscriptionUploader: React.FC = () => {
       };
       
       setHasGeoData(true);
-      setGeoInfo(coordinates);
+      setGeoInfo({ ...coordinates, hasGPS: true });
     } else {
       setHasGeoData(false);
       setGeoInfo(null);
