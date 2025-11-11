@@ -8,7 +8,7 @@ interface FileUploadResult {
 
 export const useFileUpload = (
   onFileUploadData: (exifData: any, hasGPS: boolean) => void,
-  onStoneCheck?: (imageDataUrl: string) => void
+  onStoneCheck?: (imageDataUrl: string) => Promise<boolean>
 ) => {
   const handleFileUpload = async (files: FileList | null): Promise<FileUploadResult | null> => {
     if (!files) return null;
@@ -27,10 +27,17 @@ export const useFileUpload = (
           reader.readAsDataURL(file);
         });
 
-        // Verify GPS data in the image
+        // First check if it's a stone inscription
+        if (onStoneCheck) {
+          const isStoneInscription = await onStoneCheck(imageDataUrl);
+          if (!isStoneInscription) {
+            errorMessages.push(`${file.name} is not a stone inscription - discarded`);
+            continue; // Skip this file and move to next
+          }
+        }
+
+        // Only process GPS data if it's a valid stone inscription
         const gpsResult = verifyGPSInImage(imageDataUrl);
-        
-        // Pass GPS data to parent component
         onFileUploadData(gpsResult.allExif, gpsResult.hasGPS);
 
         if (!gpsResult.hasGPS) {
@@ -38,11 +45,6 @@ export const useFileUpload = (
         }
 
         newPhotos.push(imageDataUrl);
-
-        // If stone check is enabled, perform it
-        if (onStoneCheck) {
-          onStoneCheck(imageDataUrl);
-        }
 
       } catch (error) {
         console.error('Error processing file:', error);

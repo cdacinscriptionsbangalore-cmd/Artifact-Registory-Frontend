@@ -15,8 +15,9 @@ import InscriptionForm from "../components/InscriptionForm";
 import { useInscriptionUploader } from "../hooks/UseInscriptionUploader";
 import { checkStoneInscription } from "../Services/inscriptionService";
 import { useCamera } from "../hooks/UseCamera";
+import { getEnvConfig } from "../config/env";
 // declare module 'piexifjs';
-const piexifjs: any = require('piexifjs');
+import piexifjs from "piexifjs";
 
 const EnhancedInscriptionUploader: React.FC = () => {
   const {
@@ -33,7 +34,54 @@ const EnhancedInscriptionUploader: React.FC = () => {
     resetForm
   } = useInscriptionUploader();
 
-  const handlePhotoCapture = (photoDataUrl: string, locationData: any, hasGPS: boolean) => {
+  const checkStone = async (imageDataUrl: string): Promise<boolean> => {
+    setIsCheckingStone(true);
+    setStoneCheckResult(null);
+    
+    try {
+      const res = await fetch(imageDataUrl);
+      const blob = await res.blob();
+      const formData = new FormData();
+      formData.append("file", blob, "inscription.jpg");
+
+      const { backendDetectUrl } = getEnvConfig();
+      const response = await fetch(`${backendDetectUrl}predict/`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data?.detail?.toLowerCase().includes("suspicious content")) {
+        setStoneCheckResult("Suspicious content detected");
+        setError("Upload restricted: Suspicious content detected in file.");
+        return false;
+      }
+
+      if (data?.result === "Stone Inscription") {
+        setStoneCheckResult(data.result);
+        return true;
+      }
+      
+      setStoneCheckResult(data?.result || "Not a Stone Inscription");
+      setError("Upload restricted: Not a Stone Inscription.");
+      return false;
+    } catch (err) {
+      setError("Failed to check inscription type.");
+      return false;
+    } finally {
+      setIsCheckingStone(false);
+    }
+  };
+
+  // Handle photo capture with stone inscription check
+  const handlePhotoCapture = async (photoDataUrl: string, locationData: any, hasGPS: boolean) => {
+    const isStoneInscription = await checkStone(photoDataUrl);
+    if (!isStoneInscription) {
+      setError("Photo discarded: Not a stone inscription");
+      return;
+    }
+    
     setPhotos(prev => [...prev, photoDataUrl]);
     if (hasGPS && locationData) {
       setGeoInfo({ ...locationData, hasGPS: true });
@@ -45,9 +93,6 @@ const EnhancedInscriptionUploader: React.FC = () => {
   };
 
   const { isCapturing, videoRef, canvasRef, startCamera, stopCamera, capturePhoto } = useCamera(handlePhotoCapture);
-
-  const checkStone = (imageDataUrl: string) => 
-    checkStoneInscription(imageDataUrl, setIsCheckingStone, setStoneCheckResult, setError);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
