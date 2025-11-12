@@ -1,6 +1,6 @@
 import { ProtectedRoute, PublicRoute } from "@/layouts/ProtectedLayOut/ProtectedLayout";
 import HomePage from "@/views/Home/Home";
-import InscriptionDetails from "@/views/InscriptionDetailPage.tsx/InscriptionDetails";
+import InscriptionDetails from "@/views/InscriptionDetailPage/InscriptionDetails";
 import Upload from "@/views/Upload/Upload";
 import BaseLayout from "@layouts/MainLayout/BaseLayout";
 import AuthPage from "@views/Auth/AuthPage";

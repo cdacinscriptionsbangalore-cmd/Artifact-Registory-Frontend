@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { ThumbsUp, MapPin, Calendar, Languages, BookOpen, Share2, Heart, Plus, Edit2, Trash2 } from 'lucide-react';
 import StarRating from './StarRating';
-import CommentCard from './CommentCard';
 import RatingModal from './RatingModal';
 import { useParams } from 'react-router-dom';
-import Model from './Model';
+import Model from "./Model";
 import ImageCarousel from './ImageCarousel';
 import type { User } from '@/types';
 import ShareModal from '@/components/ShareModal/ShareModal';
 import { getCookie } from '@/utils/Auth/auth';
+import CommentCard from './CommentCard';
 
 const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
 
@@ -80,6 +80,8 @@ const InscriptionDetailsPage: React.FC = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [display, setDisplay] = useState(false);
   const [userDetails, setUserDetails] = useState(null as User | null);
+  const [description, setDescription] = useState<string>(""); // populate from fetch/original data
+  const [showModal, setShowModal] = useState(false);
 
   const handleOpen = () => setDisplay(true);
   const handleClose = () => setDisplay(false);
@@ -300,9 +302,16 @@ const handleRating = async (newRating: number) => {
     );
   }
 
+  // called by Model after successful post
+  const handleDescriptionAdded = (newDesc: string) => {
+    // replace or append depending on desired UX:
+    // setDescription(prev => prev ? `${prev}\n${newDesc}` : newDesc);
+    setDescription(newDesc);
+  };
+
   return (
     <div className="min-h-screen bg-primary-background">
-      <Model postId={postId as string} display={display} onClose={handleClose} />
+      <Model postId={postId as string} display={display} onClose={handleClose} onDescriptionAdded={handleDescriptionAdded} />
       <div className="max-w-4xl mx-auto p-4">
         <ImageCarousel
           images={Array.isArray(post.images.image) ? post.images.image : []}
@@ -471,8 +480,8 @@ const handleRating = async (newRating: number) => {
         <div className="mb-8">
           <h3 className="text-white text-xl font-bold mb-6">Top Comments</h3>
           <div className="space-y-6">
-            {comments.map((comment: Comment) => (
-              <CommentCard comments={comment} />
+            {comments.map(comment => (
+              <CommentCard key={comment.id ?? comment._id} comments={comment} currentUser={userDetails} />
             ))}
           </div>
         </div>

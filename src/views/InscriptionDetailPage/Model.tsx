@@ -9,65 +9,68 @@ interface ModelProps {
   postId: string;
   display: boolean;
   onClose: () => void;
+  // pass back created comment object so parent can update list immediately
+  onDescriptionAdded?: (createdComment: any) => void;
 }
 
-const Model: React.FC<ModelProps> = ({ postId, display, onClose }) => {
-
+const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAdded }) => {
   const [inputValue, setInputValue] = useState("");
-  const handleInputChange = (e: String) => {
-    setInputValue(e as string);
+
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
   };
 
   const handlePost = async () => {
-  try {  
-    const token = getCookie("token");
-    const form = new FormData();
-    form.append("postId", postId);
-    form.append("description", inputValue);
+    try {
+      const token = getCookie("token");
 
-    const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
-    myHeaders.append("Authorization", `Bearer ${token}`);
-    myHeaders.append("X-XSRF-TOKEN", getCookie('XSRF-TOKEN') || '50d7115f-8f84-4e07-a8ae-1a155afe4864');
+      const myHeaders = new Headers();
+      myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
+      myHeaders.append("Authorization", `Bearer ${token}`);
+      myHeaders.append("X-XSRF-TOKEN", getCookie('XSRF-TOKEN') || '50d7115f-8f84-4e07-a8ae-1a155afe4864');
 
-    const urlencoded = new URLSearchParams();
-    urlencoded.append("postId", postId);
-    urlencoded.append("discription", inputValue);
+      const urlencoded = new URLSearchParams();
+      urlencoded.append("postId", postId);
+      // keep spelling used by backend if required; adjust if backend expects "description"
+      urlencoded.append("discription", inputValue);
 
-    const requestOptions: RequestInit = {
-      credentials: 'include' as RequestCredentials,
-      method: "POST",
-      headers: myHeaders,
-      body: urlencoded,
-      redirect: "follow"
-    };
+      const requestOptions: RequestInit = {
+        credentials: 'include' as RequestCredentials,
+        method: "POST",
+        headers: myHeaders,
+        body: urlencoded,
+        redirect: "follow"
+      };
 
-    const response = await fetch(`${backendApiUrl}post/addPoastDiscription`, requestOptions)
+      const response = await fetch(`${backendApiUrl}post/addPoastDiscription`, requestOptions);
 
-    if (!response.ok) {
-      const errorText = await response.text(); // or response.json() if backend returns JSON
-      throw new Error(`${response.status} - ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`${response.status} - ${errorText}`);
+      }
+
+      // assume server returns the created comment/object
+      const data = await response.json();
+      console.log("Server response:", data);
+
+      // give parent the created object so it can update UI immediately
+      onDescriptionAdded?.(data ?? { description: inputValue, postId });
+
+      alert("Description uploaded successfully!");
+      onClose(); // close modal after success
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Upload failed:", error.message);
+        alert("Upload failed: " + error.message);
+      } else {
+        console.error("Unknown error:", error);
+        alert("An unknown error occurred.");
+      }
+    } finally {
+      setInputValue("");
     }
 
-    const data = await response.json(); // 🔥 get backend response
-    console.log("Server response:", data);
-
-    alert("Description uploaded successfully!");
-    onClose(); // Close the modal after posting
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("Upload failed:", error.message);
-      alert("Upload failed: " + error.message);
-    } else {
-      console.error("Unknown error:", error);
-      alert("An unknown error occurred.");
-    }
-  } finally {
-    setInputValue(""); // Clear input after attempt
-    onClose(); // Close the modal after attempt
-  }
-
-  console.log("Posting:", inputValue);
+    console.log("Posting:", inputValue);
   };
 
 
