@@ -1,7 +1,13 @@
 import type React from "react";
 import logo from "@assets/Frame.png"
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { isAuthenticated, logout } from "@/utils/auth";
+import { getCookie } from "@/utils/Auth/auth";
+import { useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
+import { clearUserActivityTracking, trackUserActivity } from "./EventManager";
+
+
 
 interface NavItem {
   path: string;
@@ -12,6 +18,69 @@ interface NavItem {
 const Nav: React.FC = () => {
     const authenticated = isAuthenticated();
     
+ const navigate = useNavigate();
+  
+  
+  
+    const loggoutServer = () => {
+      let token = getCookie('token');
+      if (!token) {
+        return;
+      }
+  
+      console.log('logout ho ra hai');
+  
+         navigate('/login', { replace: true });
+  
+      // const url = process.env.REACT_APP_SERVER_URL + '/officer/logout';
+      // const config = {
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      // };
+      // axios
+      //   .post(url, null, config)
+      //   .then((resp) => {
+      //     console.log(resp.data.data);
+      //   })
+      //   .catch((error) => {
+      //     console.error('Error logging out:', error);
+      //   });
+    };
+  
+    useEffect(() => {
+      const token = getCookie('token');
+      if (!token) {
+        navigate('/login', { replace: true });
+        // logout();
+        return;
+      }
+      const data_decoded: any = jwtDecode(token);
+  
+      const sessionStartTime = new Date(data_decoded.iat * 1000);
+      const sessionEndTime = new Date(data_decoded.exp * 1000);
+      const idealTime =
+        (sessionEndTime.getTime() - sessionStartTime.getTime()) / (1000 * 60);
+      const sessionTimeout = idealTime * 60 * 1000;
+  
+      const handleSessionTimeout = () => {
+      
+        loggoutServer();
+        logout();
+      };
+      const activityEvents = [
+        'mousemove',
+        'click',
+        'keydown',
+        'scroll',
+        'touchstart',
+      ];
+      trackUserActivity(activityEvents, sessionTimeout, handleSessionTimeout);
+      
+      return () => {
+        clearUserActivityTracking(activityEvents);
+      };
+    }, [navigate ]);
 
     const protectedLinks: NavItem[] = [
       { path: "/home", label: "Home", end: true },

@@ -122,8 +122,8 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid" }) 
               isLiked ? 'text-red-400 bg-red-950' : 'text-gray-400 bg-gray-700'
             } hover:text-red-400 hover:bg-red-950 transition-colors`}
           >
-            <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-            {post.description.upvote}
+            {/* <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+            {post.description.upvote} */}
           </button>
           
           <NavLink to={post._id} className="text-orange-500 hover:text-orange-400 text-sm font-medium cursor-pointer">
