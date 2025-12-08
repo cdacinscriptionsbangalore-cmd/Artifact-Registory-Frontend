@@ -1,4 +1,4 @@
-// import { ProtectedRoute, PublicRoute } from "@/layouts/ProtectedLayOut/ProtectedLayout";
+import { ProtectedRoute, PublicRoute } from "@/layouts/ProtectedLayOut/ProtectedLayout";
 import HomePage from "@/views/Home/Home";
 import InscriptionDetails from "@/views/InscriptionDetailPage.tsx/InscriptionDetails";
 import Upload from "@/views/Upload/Upload";
@@ -18,9 +18,9 @@ const MainRoutes = {
     {
       index: true,
       element: (
-        // <ProtectedRoute>
+        <ProtectedRoute>
           <Navigate to="home" replace />
-        // </ProtectedRoute>
+        </ProtectedRoute>
       )
     },
     {
@@ -32,57 +32,57 @@ const MainRoutes = {
     {
       path: 'Feed',
       element: (
-        // <ProtectedRoute>
+        <ProtectedRoute>
           <Feed />
-        // </ProtectedRoute>
+        </ProtectedRoute>
       )
     },
     {
       path: 'upload',
       element: (
-        // <ProtectedRoute>
+        <ProtectedRoute>
           <Upload />
-        // </ProtectedRoute>
+        </ProtectedRoute>
       )
     },
     {
       path: 'Feed/:id',
       element: (
-        // <ProtectedRoute>
+        <ProtectedRoute>
           <InscriptionDetails />
-        // </ProtectedRoute>
+        </ProtectedRoute>
       )
     },
     {
       path: 'settings',
       element: (
-        // <ProtectedRoute>
+        <ProtectedRoute>
           <Setting />
-        // </ProtectedRoute>
+        </ProtectedRoute>
       )
     },
     {
       path: 'profile',
       element: (
-        // <ProtectedRoute>
+        <ProtectedRoute>
           <Profile1 />
-        // </ProtectedRoute>
+        </ProtectedRoute>
       )
     },
     {
       path: 'photos',
       element: (
-        // <ProtectedRoute>
+        <ProtectedRoute>
           <Gallery />
-        // </ProtectedRoute>
+        </ProtectedRoute>
       )
     },
     {
       path: 'login',
       element: (
-        // <PublicRoute>
+        <PublicRoute>
           <AuthPage />
-        // </PublicRoute>
+        </PublicRoute>
       )
     }
   ]
