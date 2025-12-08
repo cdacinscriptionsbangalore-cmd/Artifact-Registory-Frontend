@@ -22,7 +22,7 @@ window.location.href = redirectURL;
   }
 
   return (
-    <div className="flex items-center justify-center">
+    <div className="flex items-center justify-center" style={{minHeight:"60vh"}}>
       <div className="bg-white shadow-lg rounded-2xl p-10 w-full max-w-md text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
           Welcome Back 👋
