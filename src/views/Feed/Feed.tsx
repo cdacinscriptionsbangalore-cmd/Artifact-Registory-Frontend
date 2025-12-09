@@ -2,22 +2,23 @@ import { useState, useEffect } from 'react';
 // import { Search } from 'lucide-react';
 // import FilterBar from './FilterBar';
 import DiscoveryCard from './DiscoveryCard';
-import dummyPosts from "@/Db/feeds";
+// import dummyPosts from "@/Db/feeds";
 // import { getTokenFromCookie } from '@/utils/cookieUtils';
+const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
 
 export interface Post {
-   _id: string;
-    description: {
-      title: string;
-      subject: string;
-      geolocation: {
-        city: string;
-        [key: string]: any;
-      };
+  _id: string;
+  description: {
+    title: string;
+    subject: string;
+    geolocation: {
+      city: string;
       [key: string]: any;
     };
-    script: string[];
     [key: string]: any;
+  };
+  script: string[];
+  [key: string]: any;
 }
 
 // Main Discovery Feed Component
@@ -38,7 +39,7 @@ const Feed = () => {
     script: string[];
     [key: string]: any;
   };
-  
+
   const [posts, setPosts] = useState<Post[]>([]);
 
   function getCookie(name: string): string | null {
@@ -55,11 +56,13 @@ const Feed = () => {
     const fetchPosts = async () => {
       try {
         const token = getCookie('token');
-        const response = await fetch('http://localhost:8080/post/getAllPost', {
+        const response = await fetch(`${backendApiUrl}post/getAllPost`, {
+          credentials: 'include',
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
+            "X-XSRF-TOKEN": getCookie('XSRF-TOKEN') || ''
           },
           body: JSON.stringify({}),
         });
@@ -73,7 +76,7 @@ const Feed = () => {
   }, []);
 
   // Filter posts based on search term
-  const filteredPosts = posts.filter(post => 
+  const filteredPosts = posts.filter(post =>
     // post?.description?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     // post?.description?.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     // post?.description?.geolocation?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -119,33 +122,42 @@ const Feed = () => {
 
         {/* Posts Grid/List */}
         <div className={
-          layout === 'grid' 
+          layout === 'grid'
             ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 "
             : "space-y-4"
         }>
+          {posts.map((post) => (
+            <DiscoveryCard
+              key={post._id}
+              post={post}
+              layout={layout}
+            />
+          ))
+
+          }
           {/* {dummyPosts.map((post) => ( */}
-            <DiscoveryCard 
-              // key={dummyPosts[0]._id} 
-              post={dummyPosts.data[0]} 
-              layout={layout}
-            />
-            <DiscoveryCard 
-              // key={dummyPosts[0]._id} 
-              post={dummyPosts.data[1]} 
-              layout={layout}
-            />
-            <DiscoveryCard 
-              // key={dummyPosts[0]._id} 
-              post={dummyPosts.data[2]} 
-              layout={layout}
-            />
-            <DiscoveryCard 
-              // key={dummyPosts[0]._id} 
-              post={dummyPosts.data[3]} 
-              layout={layout}
-            />
+          {/* <DiscoveryCard */}
+          {/* // key={dummyPosts[0]._id}  */}
+          {/* post={dummyPosts.data[0]} */}
+          {/* layout={layout} */}
+          {/* /> */}
+          {/* <DiscoveryCard */}
+          {/* // key={dummyPosts[0]._id} 
+            post={dummyPosts.data[1]}
+            layout={layout}
+          />
+          <DiscoveryCard
+            // key={dummyPosts[0]._id} 
+            post={dummyPosts.data[2]}
+            layout={layout}
+          />
+          <DiscoveryCard
+            // key={dummyPosts[0]._id} 
+            post={dummyPosts.data[3]}
+            layout={layout}
+          /> */}
           {/* )) */}
-          
+
           {/* } */}
         </div>
 

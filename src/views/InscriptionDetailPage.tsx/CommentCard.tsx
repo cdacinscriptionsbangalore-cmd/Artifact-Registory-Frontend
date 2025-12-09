@@ -3,8 +3,11 @@ import { useEffect, useState } from "react";
 import type { Comment } from "./InscriptionDetailPage";
 import type { User } from "@/types";
 
+const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
+
 interface CommentCardProps {
   comments: Comment;
+  currentUser?: User; // Pass user from parent to avoid redundant fetches
 }
 
 // Comment Component
@@ -12,7 +15,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comments }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likes, setLikes] = useState(comments.upvote);
   const [UserDetails, SetUserDetails] = useState<User>();
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
 
   function getCookie(name: string): string | null {
     const value = `; ${document.cookie}`;
@@ -49,7 +52,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comments }) => {
     setLikes((prev) => prev + (isLiked ? -1 : 1));
 
     try {
-      const response = await fetch("http://localhost:8080/post/addVote", requestOptions);
+      const response = await fetch(`${backendApiUrl}/post/addVote`, requestOptions);
       const result = await response.text();
       console.log(result);
       // Optionally, you can refetch the comment or update userVote array here
@@ -87,7 +90,15 @@ const CommentCard: React.FC<CommentCardProps> = ({ comments }) => {
           body: urlencoded,
           redirect: "follow"
         };
-        const response = await fetch('http://localhost:8080/post/userProfile', requestOptions)
+        const response = await fetch(`${backendApiUrl}/post/userProfile`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({}),
+        }
+        )
 
         const data = await response.json();
         SetUserDetails(data.data);
@@ -99,6 +110,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comments }) => {
     };
     fetchUser();
   }, []);
+
 
   // Set isLiked based on userVote and UserDetails
   useEffect(() => {

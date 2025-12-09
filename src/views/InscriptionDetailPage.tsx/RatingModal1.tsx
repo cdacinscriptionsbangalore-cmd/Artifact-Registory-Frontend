@@ -5,20 +5,21 @@ import { useState } from "react";
 
 // Add `onRatingSubmitted` prop to handle success and error callbacks
 interface RatingModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    currentRating: number;
-    onSubmitRating: (rating: number) => void;
-    onRatingSubmitted?: (success: boolean, message?: string) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  currentRating: number;
+  onSubmitRating: (rating: number) => void;
+  onRatingSubmitted?: (success: boolean, message?: string) => void;
+  postId: string
 }
 
 // Rating Modal Component
-const RatingModal: React.FC<RatingModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  currentRating, 
+const RatingModal: React.FC<RatingModalProps> = ({
+  isOpen,
+  onClose,
+  currentRating,
   onSubmitRating,
-  onRatingSubmitted 
+  onRatingSubmitted
 }) => {
   const [rating, setRating] = useState(currentRating);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,12 +57,12 @@ const RatingModal: React.FC<RatingModalProps> = ({
     <div className="fixed inset-0 bg-opacity-50 bg-black/80 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg p-6 max-w-sm w-full">
         <h3 className="text-black text-xl font-semibold mb-4">Rate this inscription</h3>
-        
+
         <div className="flex justify-center mb-6">
           <StarRating
-            rating={rating} 
+            rating={rating}
             size="w-8 h-8"
-            interactive={!isSubmitting} 
+            interactive={!isSubmitting}
             onRate={setRating}
           />
         </div>

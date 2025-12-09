@@ -1,7 +1,11 @@
 // Model.tsx
 import type React from "react";
 import { useState } from "react";
+// import { getCookie } from "@/utils/Auth/auth";
+
 import { Snackbar, Alert, Slide } from "@mui/material";
+
+const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
 
 interface ModelProps {
     postId: string;
@@ -9,6 +13,7 @@ interface ModelProps {
     onClose: () => void;
     onPostSuccess: (message: string) => void;
     onPostError: (message: string) => void;
+    onDescriptionAdded?: (createdComment: any) => void;
 }
 
 const Model: React.FC<ModelProps> = ({ postId, display, onClose, onPostSuccess, onPostError }) => {
@@ -51,7 +56,7 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onPostSuccess, 
                 redirect: "follow"
             };
 
-            const response = await fetch("http://localhost:8080/post/addPoastDiscription", requestOptions);
+            const response = await fetch(`${backendApiUrl}post/addPoastDiscription`, requestOptions);
 
             if (!response.ok) {
                 const errorText = await response.text();
