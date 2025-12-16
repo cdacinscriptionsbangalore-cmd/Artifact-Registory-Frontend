@@ -1,5 +1,6 @@
+import { Check, WandSparkles } from "lucide-react";
 import type { GeoInfo } from "../types/types";
-
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 
 interface SuggestionControlsProps {
   isFetching: boolean;
@@ -21,7 +22,7 @@ const SuggestionControls: React.FC<SuggestionControlsProps> = ({
     onUseSuggestion(suggestion);
     try {
       await navigator.clipboard.writeText(suggestion);
-    } catch {}
+    } catch { }
   };
 
   return (
@@ -29,11 +30,15 @@ const SuggestionControls: React.FC<SuggestionControlsProps> = ({
       <button
         onClick={() => onFetch()}
         disabled={isFetching}
-        className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm"
+        className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm"
       >
-        {isFetching ? "Suggesting…" : "Suggest Description"}
+        {/* <WandSparkles /> */}
+        <AutoAwesomeOutlinedIcon />
+        <span>
+          {isFetching ? "Suggesting…" : "Suggest Description"}
+        </span>
       </button>
-      
+
       {/* <button
         onClick={() => {
           if (geoInfo?.latitude && geoInfo?.longitude) {
@@ -46,13 +51,16 @@ const SuggestionControls: React.FC<SuggestionControlsProps> = ({
       >
         Use current location
       </button> */}
-      
+
       {suggestion && (
         <button
           onClick={handleUseSuggestion}
-          className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm"
+          className="flex items-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm"
         >
-          Use suggestion
+          <Check />
+          <span>
+            Use suggestion
+          </span>
         </button>
       )}
     </div>

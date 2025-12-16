@@ -14,7 +14,7 @@ export const PhotoUploadArea = ({
   onFileChange 
 }: PhotoUploadAreaProps) => (
   <div className="space-y-4">
-    <div className="w-full h-64 flex flex-col items-center justify-center border-2 border-dashed border-gray-600 rounded-lg">
+    <div className="w-full h-91 flex flex-col items-center justify-center border-2 border-dashed border-gray-600 rounded-lg">
       <Camera size={48} className="text-orange-500 mb-4" />
       <p className="text-gray-400 text-center text-sm">
         Capture or upload photos with GPS coordinates
@@ -23,17 +23,17 @@ export const PhotoUploadArea = ({
         Images with existing GPS data will be automatically detected
       </p>
     </div>
-    <div className="flex gap-3">
+    <div className="flex h-14 gap-3">
       <button
         onClick={onStartCamera}
-        className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition flex items-center justify-center gap-2"
+        className="flex-1 cursor-pointer px-4 py-3 bg-primary hover:bg-yellow-700 text-white rounded-lg font-medium transition flex items-center justify-center gap-2"
       >
         <Camera size={16} />
         Take Photo
       </button>
       <button
         onClick={onUploadClick}
-        className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition flex items-center justify-center gap-2"
+        className="flex-1 px-4 cursor-pointer py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition flex items-center justify-center gap-2"
       >
         <Upload size={16} />
         Upload

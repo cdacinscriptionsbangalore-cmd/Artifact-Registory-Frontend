@@ -10,7 +10,7 @@ export const useInscriptionUploader = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isCheckingStone, setIsCheckingStone] = useState(false);
   const [stoneCheckResult, setStoneCheckResult] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState<PostSchema>({
     description: {},
     topic: "",
@@ -25,6 +25,8 @@ export const useInscriptionUploader = () => {
         ...prev,
         description: { ...prev.description, [key]: value }
       }));
+    } if (field.startsWith("type")) {
+      setFormData(prev => ({ ...prev, [field]: value.target.value }));
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
@@ -44,6 +46,7 @@ export const useInscriptionUploader = () => {
     } finally {
       setIsUploading(false);
     }
+    // console.log(formData)
   };
 
   const resetForm = () => {

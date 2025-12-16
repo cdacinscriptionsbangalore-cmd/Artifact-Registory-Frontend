@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 
 import { useFileUpload } from "../hooks/useFileUpload";
 import { useDescriptionSuggestion } from "../hooks/useDescriptionSuggestion";
@@ -18,6 +18,12 @@ import { useCamera } from "../hooks/UseCamera";
 import { getEnvConfig } from "../config/env";
 // declare module 'piexifjs';
 import piexifjs from "piexifjs";
+import { Alert, Slide, Snackbar, type SlideProps } from "@mui/material";
+
+function SlideDownTransition(props: SlideProps) {
+  // direction="down" makes it slide top -> down
+  return <Slide {...props} direction="down" />;
+}
 
 const EnhancedInscriptionUploader: React.FC = () => {
   const {
@@ -37,7 +43,7 @@ const EnhancedInscriptionUploader: React.FC = () => {
   const checkStone = async (imageDataUrl: string): Promise<boolean> => {
     setIsCheckingStone(true);
     setStoneCheckResult(null);
-    
+
     try {
       const res = await fetch(imageDataUrl);
       const blob = await res.blob();
@@ -62,7 +68,7 @@ const EnhancedInscriptionUploader: React.FC = () => {
         setStoneCheckResult(data.result);
         return true;
       }
-      
+
       setStoneCheckResult(data?.result || "Not a Stone Inscription");
       setError("Upload restricted: Not a Stone Inscription.");
       return false;
@@ -81,7 +87,7 @@ const EnhancedInscriptionUploader: React.FC = () => {
       setError("Photo discarded: Not a stone inscription");
       return;
     }
-    
+
     setPhotos(prev => [...prev, photoDataUrl]);
     if (hasGPS && locationData) {
       setGeoInfo({ ...locationData, hasGPS: true });
@@ -94,14 +100,42 @@ const EnhancedInscriptionUploader: React.FC = () => {
 
   const { isCapturing, videoRef, canvasRef, startCamera, stopCamera, capturePhoto } = useCamera(handlePhotoCapture);
 
+  // const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const files = e.target.files;
+  //   const result = await fileUpload.handleFileUpload(files);
+  //   if (result) {
+  //     setPhotos(prev => [...prev, ...result.newPhotos]);
+  //     if (result.errorMessages.length > 0) {
+  //       setError(result.errorMessages.join(" "));
+  //     }
+  //   }
+  // };
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    const result = await fileUpload.handleFileUpload(files);
-    if (result) {
-      setPhotos(prev => [...prev, ...result.newPhotos]);
-      if (result.errorMessages.length > 0) {
-        setError(result.errorMessages.join(" "));
+    if (!files || files.length === 0) return;
+
+    try {
+      // fileUpload is the returned object from useFileUpload { handleFileUpload }
+      const result = await fileUpload.handleFileUpload(files);
+      if (!result) return;
+
+      // only append when there are new photos
+      if (result.newPhotos && result.newPhotos.length > 0) {
+        setPhotos(prev => [...prev, ...result.newPhotos]);
       }
+
+      // if hook returned any error messages, combine them and set error state
+      if (result.errorMessages && result.errorMessages.length > 0) {
+        // join with bullet or newline for readability in Snackbar
+        const combined = result.errorMessages.join(" • ");
+        setError(combined);
+      }
+    } catch (err) {
+      console.error("handleFileChange error:", err);
+      setError("Unexpected error processing uploaded files.");
+    } finally {
+      // reset input value so same files can be re-selected if needed
+      if (e.target) e.target.value = "";
     }
   };
 
@@ -113,7 +147,7 @@ const EnhancedInscriptionUploader: React.FC = () => {
         longitude: exifData.GPS[piexifjs.GPSIFD.GPSLongitude],
         timestamp: exifData.GPS[piexifjs.GPSIFD.GPSTimeStamp],
       };
-      
+
       setHasGeoData(true);
       setGeoInfo({ ...coordinates, hasGPS: true });
     } else {
@@ -128,56 +162,158 @@ const EnhancedInscriptionUploader: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarSeverity, setSnackbarSeverity] = useState<
+    "info" | "success" | "warning" | "error"
+  >("info");
+  const [snackbarMessage, setSnackbarMessage] = useState<string>("");
+
+  // useEffect(() => {
+  //   if (isCheckingStone) {
+  //     setSnackbarSeverity("info");
+  //     setSnackbarMessage("🔍 Checking inscription type...");
+  //     setSnackbarOpen(true);
+  //     return;
+  //   }
+  //   if (error) {
+  //     setSnackbarSeverity("error");
+  //     setSnackbarMessage(error);
+  //     setSnackbarOpen(true);
+  //   }
+
+  //   // if checking finished and there's a result, show it as success/warning
+  //   if (!isCheckingStone && stoneCheckResult) {
+  //     // choose severity based on content
+  //     const lower = stoneCheckResult.toLowerCase();
+  //     if (lower.includes("suspicious") || lower.includes("not")) {
+  //       setSnackbarSeverity("warning");
+  //     } else {
+  //       setSnackbarSeverity("success");
+  //     }
+  //     setSnackbarMessage(`📊 Detection Result: ${stoneCheckResult}`);
+  //     setSnackbarOpen(true);
+  //     return;
+  //   }
+
+  //   // If neither checking nor result => close
+  //   if (!isCheckingStone && !stoneCheckResult) {
+  //     setSnackbarOpen(false);
+  //   }
+  // }, [isCheckingStone, stoneCheckResult, error]);
+  useEffect(() => {
+    // If there is an explicit error, show it immediately (highest priority)
+    if (error) {
+      setSnackbarSeverity("error");
+      setSnackbarMessage(error);
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // If currently checking (no error), show checking info
+    if (isCheckingStone) {
+      setSnackbarSeverity("info");
+      setSnackbarMessage("Checking inscription type...");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // If checking finished and there's a stone-check result, show it
+    if (!isCheckingStone && stoneCheckResult) {
+      const lower = stoneCheckResult.toLowerCase();
+      if (lower.includes("suspicious") || lower.includes("not")) {
+        setSnackbarSeverity("warning");
+      } else {
+        setSnackbarSeverity("success");
+      }
+      setSnackbarMessage(`Detection Result: ${stoneCheckResult}`);
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // fallback: close snackbar when nothing important to show
+    setSnackbarOpen(false);
+  }, [isCheckingStone, stoneCheckResult, error]);
+
+  const handleSnackbarClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
+
   return (
-    <div className="min-h-screen text-white p-4">
-      <div className="max-w-md mx-auto">
+    <div className="text-white p-4" >
+      <div className="mx-auto ">
         <Header />
-        
-        {error && <ErrorMessage message={error} />}
-        
-        {hasGeoData !== null && <GPSStatus hasGeoData={hasGeoData} geoInfo={geoInfo} />}
+        <div className="space-x-6 sm:flex">
 
-        <div className="mb-6">
-          {isCapturing ? (
-            <CameraView
-              videoRef={videoRef}
-              canvasRef={canvasRef}
-              onCapture={() => capturePhoto(checkStone)}
-              onCancel={stopCamera}
+          <div style={{ width: "100%" }}>
+
+            {/* {error && <ErrorMessage message={error} />} */}
+
+            {hasGeoData !== null && <GPSStatus hasGeoData={hasGeoData} geoInfo={geoInfo} />}
+
+            <div className="mb-6" >
+              {isCapturing ? (
+                <CameraView
+                  videoRef={videoRef}
+                  canvasRef={canvasRef}
+                  onCapture={() => capturePhoto(checkStone)}
+                  onCancel={stopCamera}
+                />
+              ) : photos.length > 0 ? (
+                <PhotoGrid photos={photos} onReset={resetForm} />
+              ) : (
+                <PhotoUploadArea
+                  onStartCamera={startCamera}
+                  onUploadClick={() => fileInputRef.current?.click()}
+                  fileInputRef={fileInputRef}
+                  onFileChange={handleFileChange}
+                />
+              )}
+            </div>
+
+            {/* <StoneCheckStatus isChecking={isCheckingStone} result={stoneCheckResult} /> */}
+          </div>
+          <div style={{ width: "100%" }}>
+            <InscriptionForm
+              formData={formData}
+              onChange={handleInputChange}
+              suggestion={suggestion}
+              onSuggestionClose={() => setSuggestion(null)}
+              isFetchingSuggestion={isFetching}
+              onFetchSuggestion={fetchSuggestion}
+              geoInfo={geoInfo}
             />
-          ) : photos.length > 0 ? (
-            <PhotoGrid photos={photos} onReset={resetForm} />
-          ) : (
-            <PhotoUploadArea
-              onStartCamera={startCamera}
-              onUploadClick={() => fileInputRef.current?.click()}
-              fileInputRef={fileInputRef}
-              onFileChange={handleFileChange}
-            />
-          )}
-        </div>
 
-        <StoneCheckStatus isChecking={isCheckingStone} result={stoneCheckResult} />
-
-        <InscriptionForm
-          formData={formData}
-          onChange={handleInputChange}
-          suggestion={suggestion}
-          onSuggestionClose={() => setSuggestion(null)}
-          isFetchingSuggestion={isFetching}
-          onFetchSuggestion={fetchSuggestion}
-          geoInfo={geoInfo}
-        />
-
-        <div className="mt-8 space-y-4">
-          <UploadButton
-            onClick={handleUpload}
-            disabled={!photos.length || isUploading}
-            isUploading={isUploading}
-          />
-          {/* <InfoFooter /> */}
+            <div className="mt-8 space-y-4">
+              <UploadButton
+                onClick={handleUpload}
+                disabled={!photos.length || isUploading}
+                isUploading={isUploading}
+              />
+              {/* <InfoFooter /> */}
+            </div>
+          </div>
         </div>
       </div>
+      <Snackbar
+        open={snackbarOpen}
+        onClose={handleSnackbarClose}
+        autoHideDuration={3500}
+        TransitionComponent={SlideDownTransition}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        {/* <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: "100%" }}>
+          {snackbarMessage}
+        </Alert> */}
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: "100%" }}>
+          {snackbarMessage.split(" • ").map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+        </Alert>
+
+      </Snackbar>
     </div>
   );
 };
