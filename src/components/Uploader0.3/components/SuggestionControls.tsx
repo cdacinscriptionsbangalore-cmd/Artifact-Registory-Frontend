@@ -52,7 +52,7 @@ const SuggestionControls: React.FC<SuggestionControlsProps> = ({
         Use current location
       </button> */}
 
-      {suggestion && (
+      {suggestion && suggestion!== "Failed to get suggestion." && (
         <button
           onClick={handleUseSuggestion}
           className="flex items-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm"

@@ -251,15 +251,7 @@ const EnhancedInscriptionUploader: React.FC = () => {
 
             {/* {error && <ErrorMessage message={error} />} */}
 
-            {hasGeoData !== null && <Snackbar
-              open={snackbarOpen}
-              onClose={handleSnackbarClose}
-              autoHideDuration={3500}
-              TransitionComponent={SlideDownTransition}
-              anchorOrigin={{ vertical: "top", horizontal: "center" }}
-            >
-              <GPSStatus hasGeoData={hasGeoData} geoInfo={geoInfo} />
-            </Snackbar>}
+            {hasGeoData !== null && <GPSStatus hasGeoData={hasGeoData} geoInfo={geoInfo} />}
 
             <div className="mb-6" >
               {isCapturing ? (

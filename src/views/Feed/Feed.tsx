@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 // import { Search } from 'lucide-react';
 // import FilterBar from './FilterBar';
 import DiscoveryCard from './DiscoveryCard';
+import FilterBar from './FilterBar';
 // import dummyPosts from "@/Db/feeds";
 // import { getTokenFromCookie } from '@/utils/cookieUtils';
 const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
@@ -106,12 +107,12 @@ const Feed = () => {
         </div>
 
         {/* Filter Bar */}
-        {/* <FilterBar 
+        <FilterBar 
           layout={layout} 
           setLayout={setLayout}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
-        /> */}
+        />
 
         {/* Results Count */}
         <div className="mb-4">

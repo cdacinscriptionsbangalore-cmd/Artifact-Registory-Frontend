@@ -32,17 +32,17 @@ const MainRoutes = {
     {
       path: 'Feed',
       element: (
-        <ProtectedRoute>
+        // <ProtectedRoute>
           <Feed />
-        </ProtectedRoute>
+        // </ProtectedRoute>
       )
     },
     {
       path: 'upload',
       element: (
-        <ProtectedRoute>
+        // <ProtectedRoute>
           <Upload />
-        </ProtectedRoute>
+        // </ProtectedRoute>
       )
     },
     {

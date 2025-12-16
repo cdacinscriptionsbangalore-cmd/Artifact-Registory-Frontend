@@ -71,7 +71,7 @@
 }
 
 .card-styling:hover,
-:focus {
+.card-styling:focus {
   transition: all 0.3s ease-in-out;
   background: #ffde71;
 }

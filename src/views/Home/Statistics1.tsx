@@ -2,6 +2,11 @@ import { Award, BookOpen, Globe, Users } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import "./Statistics.css";
+import { getCookie } from "@/utils/Auth/auth.ts";
+
+const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
+
+
 const Statistics: React.FC = () => {
     const statistics = [
         { icon: BookOpen, label: "totalPosts", value: "12,456", color: "text-blue-400", bgColor: "#51A2FF" },
@@ -11,14 +16,26 @@ const Statistics: React.FC = () => {
     ];
 
     const [Statistics, setStatistics] = useState(statistics);
+    
+    function getCookie(name: string): string | null {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+            return parts.pop()?.split(';').shift() || null;
+        }
+        return null;
+    }
 
     useEffect(() => {
         const fetchStatistics = async () => {
             try {
-                const response = await fetch('http://localhost:8080/post/public/getDashboardCounts', {
+                const xsrfToken = getCookie("XSRF-TOKEN");
+                const response = await fetch(`${backendApiUrl}post/public/getDashboardCounts`, {
+                    credentials: 'include',
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
+                        "X-XSRF-TOKEN": xsrfToken || ""
                     },
                 });
                 const data = await response.json();
