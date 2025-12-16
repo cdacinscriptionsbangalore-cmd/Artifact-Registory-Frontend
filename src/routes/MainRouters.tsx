@@ -18,9 +18,9 @@ const MainRoutes = {
     {
       index: true,
       element: (
-        <ProtectedRoute>
+        // <ProtectedRoute>
           <Navigate to="home" replace />
-        </ProtectedRoute>
+        // </ProtectedRoute>
       )
     },
     {
@@ -40,9 +40,9 @@ const MainRoutes = {
     {
       path: 'upload',
       element: (
-        // <ProtectedRoute>
+        <ProtectedRoute>
           <Upload />
-        // </ProtectedRoute>
+        </ProtectedRoute>
       )
     },
     {

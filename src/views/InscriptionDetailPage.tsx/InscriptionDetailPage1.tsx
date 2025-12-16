@@ -103,6 +103,10 @@ const InscriptionDetailsPage: React.FC = () => {
         return null;
     }
 
+    const handleClick = (lat: number, lon: number) => {
+        const url = `https://www.google.com/maps?q=${lat},${lon}`;
+        window.open(url, '_blank');
+    };
 
     // inside your component
     const { id: postId } = useParams<{ id: string }>();
@@ -683,13 +687,25 @@ const InscriptionDetailsPage: React.FC = () => {
                                     >
                                         Rate
                                     </button>
-                                    <button
+                                    {/* <button
                                         onClick={() => setIsBookmarked(!isBookmarked)}
                                         className={`px-4 py-2 rounded-lg cursor-pointer border-1 border-solid border-gray-600 transition-colors ${isBookmarked ? 'bg-red-500 text-white border-pink-600 border-solid border-1' : 'bg-white text-black-100 hover:bg-red-400 hover:text-white '
                                             }`}
                                     >
                                         <Heart className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
-                                    </button>
+                                    </button> */}
+                                    {post.description.geolocation?.lat !== undefined &&
+                                        post.description.geolocation?.lon !== undefined && (
+                                            <button
+                                                onClick={() => handleClick(
+                                                    post.description.geolocation!.lat!,
+                                                    post.description.geolocation!.lon
+                                                )}
+                                                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                                            >
+                                                <MapPin className='w-5 h-5' />
+                                            </button>
+                                        )}
                                     <button className="px-4 py-2 cursor-pointer bg-blue-500 text-white rounded-lg hover:bg-blue-400 transition-colors">
                                         <Share2 className="w-5 h-5" />
                                     </button>

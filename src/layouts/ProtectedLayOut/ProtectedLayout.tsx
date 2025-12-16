@@ -1,18 +1,36 @@
-
-
 // components/ProtectedRoute.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { isAuthenticated } from '@/utils/auth';
+import CircularProgess from '@components/Spinner/CircularProgess';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  if (!isAuthenticated()) {
-    return <Navigate to="/wellcome" replace />;
+  const [loading, setLoading] = useState(true);
+  const [authed, setAuthed] = useState(false);
+
+  useEffect(() => {
+    // synchronous check is fine — keep UX smooth by showing spinner while checking
+    const ok = isAuthenticated();
+    setAuthed(ok);
+    setLoading(false);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <CircularProgess />
+      </div>
+    );
   }
+
+  if (!authed) {
+    return <Navigate to="/login" replace />;
+  }
+
   return <>{children}</>;
 };
 
@@ -24,15 +42,29 @@ interface PublicRouteProps {
 }
 
 const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
-  if (isAuthenticated()) {
+  const [loading, setLoading] = useState(true);
+  const [authed, setAuthed] = useState(false);
+
+  useEffect(() => {
+    const ok = isAuthenticated();
+    setAuthed(ok);
+    setLoading(false);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <CircularProgess />
+      </div>
+    );
+  }
+
+  if (authed) {
     return <Navigate to="/feed" replace />;
   }
-  return <>{children}</>;
+  return <>
+    {children}
+  </>;
 };
 
 export { ProtectedRoute, PublicRoute };
-
-// Updated Navbar.tsx
-
-
-// Updated MainRoutes.tsx
