@@ -2,7 +2,7 @@ import type React from "react";
 import type { User } from "@/types";
 import { Share, SquarePen } from "lucide-react";
 // import profileImg from "@assets/user/profile.png";
-import coverPhoto from "@assets/parallaxImages/banner111.jpg"
+import coverPhoto from "@assets/banner111.jpg"
 interface ProfileHeaderProps {
   user: User;
 }
@@ -24,9 +24,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
               (e.currentTarget as HTMLImageElement).src = profileImg;
             }}
           /> */}
-          <div className="absolute font-bold -bottom-1 -right-1 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
+          {/* <div className="absolute font-bold -bottom-1 -right-1 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
             6
-          </div>
+          </div> */}
         </div>
 
         <div className="flex-1 sm:text-center mt-4 w-100 text-center">

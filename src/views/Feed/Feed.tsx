@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 // import FilterBar from './FilterBar';
 import DiscoveryCard from './DiscoveryCard';
 import FilterBar from './FilterBar';
-// import dummyPosts from "@/Db/feeds";
+import dummyPosts from "@/Db/feeds";
+import { Search } from 'lucide-react';
 // import { getTokenFromCookie } from '@/utils/cookieUtils';
 const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
 
@@ -78,9 +79,9 @@ const Feed = () => {
 
   // Filter posts based on search term
   const filteredPosts = posts.filter(post =>
-    // post?.description?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    // post?.description?.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    // post?.description?.geolocation?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    post?.description?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    post?.description?.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    post?.description?.geolocation?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     Array.isArray(post?.script) && post.script.some(script => script?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -117,7 +118,7 @@ const Feed = () => {
         {/* Results Count */}
         <div className="mb-4">
           <p className="text-gray-400 text-sm">
-            {/* {filteredPosts.length} sites found {searchTerm && `for "${searchTerm}"`} */}
+            {filteredPosts.length} sites found {searchTerm && `for "${searchTerm}"`}
           </p>
         </div>
 
@@ -127,7 +128,7 @@ const Feed = () => {
             ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 "
             : "space-y-4"
         }>
-          {posts.map((post) => (
+        {filteredPosts.map((post) => (
             <DiscoveryCard
               key={post._id}
               post={post}
@@ -136,34 +137,10 @@ const Feed = () => {
           ))
 
           }
-          {/* {dummyPosts.map((post) => ( */}
-          {/* <DiscoveryCard */}
-          {/* // key={dummyPosts[0]._id}  */}
-          {/* post={dummyPosts.data[0]} */}
-          {/* layout={layout} */}
-          {/* /> */}
-          {/* <DiscoveryCard */}
-          {/* // key={dummyPosts[0]._id} 
-            post={dummyPosts.data[1]}
-            layout={layout}
-          />
-          <DiscoveryCard
-            // key={dummyPosts[0]._id} 
-            post={dummyPosts.data[2]}
-            layout={layout}
-          />
-          <DiscoveryCard
-            // key={dummyPosts[0]._id} 
-            post={dummyPosts.data[3]}
-            layout={layout}
-          /> */}
-          {/* )) */}
-
-          {/* } */}
         </div>
 
         {/* Empty State */}
-        {/* {filteredPosts.length === 0 && (
+        {filteredPosts.length === 0 && (
           <div className="text-center py-12">
             <div className="text-gray-500 mb-4">
               <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -171,7 +148,7 @@ const Feed = () => {
               <p className="text-sm">Try adjusting your search terms or filters</p>
             </div>
           </div>
-        )} */}
+        )}
 
         {/* Load More Button */}
         {filteredPosts.length > 20 && (

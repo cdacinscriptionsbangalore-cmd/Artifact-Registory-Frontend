@@ -121,21 +121,21 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ comments }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {displayPosts.map((post) => (
-          <div key={post._id} className="bg-secondary-background rounded-lg p-4">
+        {displayPosts.length !== 0 && displayPosts.map((post) => (
+          <div key={post._id} className="card-styling rounded-lg p-4">
             <div className="flex items-start justify-between mb-3">
-              <h3 className="text-white font-medium">{post.description}</h3>
-              <div className="flex items-center gap-1 text-yellow-500">
+              <h3 className="text-black font-medium">{post.description}</h3>
+              <div className="flex items-center gap-1 text-orange-500">
                 <Heart className="w-4 h-4 fill-current" />
                 {post.upvote}
               </div>
             </div>
 
-            <div className="text-gray-400 text-sm mb-2">
+            <div className="text-black text-sm mb-2">
               {/* Added {post.description.subject} • {formatDate(post.createdAt)} */}
             </div>
 
-            <p className="text-gray-300 text-sm mb-3 line-clamp-3">
+            <p className="text-black text-sm mb-3 line-clamp-3">
               {post.description}
             </p>
 
