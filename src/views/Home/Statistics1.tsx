@@ -2,7 +2,7 @@ import { Award, BookOpen, Globe, Users } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import "./Statistics.css";
-import { getCookie } from "@/utils/Auth/auth.ts";
+import { getCookie } from "@/components/Uploader0.3/utils/Auth/auth";
 
 const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
 
@@ -16,15 +16,6 @@ const Statistics: React.FC = () => {
     ];
 
     const [Statistics, setStatistics] = useState(statistics);
-    
-    function getCookie(name: string): string | null {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) {
-            return parts.pop()?.split(';').shift() || null;
-        }
-        return null;
-    }
 
     useEffect(() => {
         const fetchStatistics = async () => {
