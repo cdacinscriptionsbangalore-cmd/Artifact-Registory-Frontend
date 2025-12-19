@@ -452,7 +452,14 @@ const InscriptionDetailsPage: React.FC = () => {
 
                 const data = await response.json();
                 const allPosts = Array.isArray(data.data) ? data.data : [];
-                setPost(allPosts.find(p => String(p._id) === String(postId)) || null);
+                const matchedPost =
+                    allPosts.find((p: Post) => String(p._id) === String(postId)) || null;
+
+                // console.log("Route param postId:", postId);
+                // console.log("Available IDs:", allPosts.map((p: Post) => p._id));
+                // console.log("Matched Post:", matchedPost);
+                console.log(matchedPost);
+                setPost(matchedPost);
             } catch (error) {
                 console.error("Failed to fetch posts:", error);
             } finally {
@@ -499,8 +506,8 @@ const InscriptionDetailsPage: React.FC = () => {
 
 
         fetchUserDetails();
-        fetchPostDetails();
         fetchComments();
+        fetchPostDetails();
     }, [postId]);
 
 
@@ -810,7 +817,7 @@ const InscriptionDetailsPage: React.FC = () => {
                                 <div className="flex items-center gap-4">
                                     <Tooltip title="Average rating by users" className='cursor-pointer'>
                                         <span className="inline-flex items-center gap-x-1.5 px-3 py-2 rounded-lg font-medium bg-teal-500 hover:bg-teal-300 border-1 border-teal-600 text-white">
-                                            <Star />{postToRender.rating ? postToRender.rating : 0}
+                                            <Star />{postToRender.rating ? Number(postToRender.rating).toFixed(1) : 0}
                                             {/* <Star />   {post.rating && <StarRating rating={post.rating} />} */}
                                         </span>
                                     </Tooltip>
@@ -963,7 +970,7 @@ const InscriptionDetailsPage: React.FC = () => {
                         {/* {comments.map((comment: Comment) => (
                             <CommentCard key={comment.id ?? comment._id} comments={comment} currentUser={userDetails} />
                         ))} */}
-                        {commentsToRender.map((comment: Comment) => (
+                        {comments.map((comment: Comment) => (
                             <CommentCard
                                 key={comment.id ?? comment._id}
                                 comments={comment}

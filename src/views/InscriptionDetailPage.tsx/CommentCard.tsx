@@ -40,7 +40,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comments, currentUser }) => {
     myHeaders.append("X-XSRF-TOKEN", xsrfToken);
 
     const urlencoded = new URLSearchParams();
-    urlencoded.append("descriptionId", comments._id || "");
+    urlencoded.append("descriptionId", comments.id || "");
 
     const requestOptions = {
       credentials: 'include' as RequestCredentials,
