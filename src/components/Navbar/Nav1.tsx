@@ -9,6 +9,7 @@ import DynamicFeedOutlinedIcon from '@mui/icons-material/DynamicFeedOutlined';
 import AccountBoxOutlinedIcon from '@mui/icons-material/AccountBoxOutlined';
 import { clearUserActivityTracking, trackUserActivity } from "./EventManager";
 import { jwtDecode } from "jwt-decode";
+import CircularProgess from "../Spinner/CircularProgess";
 
 
 interface NavItem {
@@ -100,7 +101,7 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
         };
 
     }, [mobileNavbarOpen, openMobileNavbarHandler, setMobileNavbarOpen, navigate]);
-    
+
     const deleteCookie = (name: any) => {
         document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; Secure`;
         navigate('/login', { replace: true });
@@ -171,7 +172,25 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
                                 </div>
                                 <div className="flex justify-between items-center space-x-3">
                                     <div className="ps-4 flex items-center justify-between">
-                                        {authenticated && (
+                                        {authenticated === null ? (
+                                            <div className="flex items-center"><CircularProgess /></div>
+                                        ) : authenticated ? (
+                                            <button
+                                                onClick={logout}
+                                                className="flex items-center gap-2 bg-primary-dark text-white border-2 border-white cursor-pointer hover:bg-primary/80 pe-4 ps-3 py-2 rounded-lg font-medium transition-colors"
+                                            >
+                                                <LogOut />Logout
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => navigate('/login')}
+                                                className="flex items-center gap-2 bg-primary-light border-2 border-white cursor-pointer text-primary-text hover:bg-primary/80 pe-4 ps-3 py-2 rounded-lg font-medium transition-colors"
+                                            >
+                                                <LogIn />
+                                                Login
+                                            </button>
+                                        )}
+                                        {/* {authenticated && (
                                             <button
                                                 onClick={logout}
                                                 // onClick={() => ToggleAuthenticated(false)}
@@ -189,7 +208,7 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
                                                 <LogIn />
                                                 Login
                                             </button>
-                                        )}
+                                        )} */}
                                     </div>
                                 </div>
                             </div>
