@@ -2,6 +2,8 @@ import { ThumbsUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Comment } from "./InscriptionDetailPage";
 import type { User } from "@/types";
+import { getCookie } from "@/utils/auth";
+import { Tooltip } from "@mui/material";
 
 const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
 
@@ -10,26 +12,24 @@ interface CommentCardProps {
   currentUser?: User; // Pass user from parent to avoid redundant fetches
 }
 
-// Comment Component
-const CommentCard: React.FC<CommentCardProps> = ({ comments }) => {
+const CommentCard: React.FC<CommentCardProps> = ({ comments, currentUser }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likes, setLikes] = useState(comments.upvote);
-  const [UserDetails, SetUserDetails] = useState<User>();
-  const [, setIsLoading] = useState(true);
 
-  function getCookie(name: string): string | null {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) {
-      return parts.pop()?.split(';').shift() || null;
+  // Initialize isLiked based on userVote
+  useEffect(() => {
+    if (currentUser?._id) {
+      const liked = comments.userVote.includes(currentUser._id);
+      setIsLiked(liked);
     }
-    return null;
-  }
+  }, [currentUser, comments.userVote]);
 
   // Like/Dislike API
   const LikeDisLikeAPI = async () => {
     const token = getCookie('token');
-    if (!token || !UserDetails?._id) {
+    const xsrfToken = getCookie('XSRF-TOKEN') || '50d7115f-8f84-4e07-a8ae-1a155afe4864';
+
+    if (!token || !currentUser?._id) {
       console.error('No token or user');
       return;
     }
@@ -37,100 +37,64 @@ const CommentCard: React.FC<CommentCardProps> = ({ comments }) => {
     const myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
     myHeaders.append("Authorization", `Bearer ${token}`);
+    myHeaders.append("X-XSRF-TOKEN", xsrfToken);
 
     const urlencoded = new URLSearchParams();
     urlencoded.append("descriptionId", comments.id || "");
+
     const requestOptions = {
+      credentials: 'include' as RequestCredentials,
       method: "POST",
       headers: myHeaders,
       body: urlencoded,
       redirect: "follow" as RequestRedirect,
     };
 
+    // Save current state for rollback
+    const previousLiked = isLiked;
+    const previousLikes = likes;
+
     // Optimistically update UI
-    setIsLiked((prev) => !prev);
-    setLikes((prev) => prev + (isLiked ? -1 : 1));
+    const newLikedState = !isLiked;
+    setIsLiked(newLikedState);
+    setLikes(prevLikes => prevLikes + (newLikedState ? 1 : -1));
 
     try {
       const response = await fetch(`${backendApiUrl}/post/addVote`, requestOptions);
-      const result = await response.text();
-      console.log(result);
-      // Optionally, you can refetch the comment or update userVote array here
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Vote result:', result);
+
+      // Optionally update with server response if it returns updated vote count
+      if (result.upvote !== undefined) {
+        setLikes(result.upvote);
+      }
     } catch (error) {
-      // Revert UI if error
-      setIsLiked((prev) => !prev);
-      setLikes((prev) => prev + (isLiked ? 1 : -1));
-      console.error(error);
+      // Revert UI on error
+      console.error('Failed to update vote:', error);
+      setIsLiked(previousLiked);
+      setLikes(previousLikes);
     }
   };
 
-  useEffect(() => {
-    // Get token at the beginning
-    const token = getCookie('token');
-
-    if (!token) {
-      console.error('No token found');
-      // Redirect to login or handle no token case
-      return;
-    }
-
-    const fetchUser = async () => {
-      try {
-        const token = getCookie('token');
-        const myHeaders = new Headers();
-        myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
-        myHeaders.append("Authorization", `Bearer ${token}`);
-
-        const urlencoded = new URLSearchParams();
-        urlencoded.append("descriptionId", comments.id);
-
-        const requestOptions = {
-          method: "POST",
-          headers: myHeaders,
-          body: urlencoded,
-          redirect: "follow"
-        };
-        const response = await fetch(`${backendApiUrl}/post/userProfile`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({}),
-        }
-        )
-
-        const data = await response.json();
-        SetUserDetails(data.data);
-      } catch (error) {
-        console.error('Failed to fetch posts:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchUser();
-  }, []);
-
-
-  // Set isLiked based on userVote and UserDetails
-  useEffect(() => {
-    if (UserDetails?._id) {
-      const liked = comments.userVote.includes(UserDetails._id);
-      setIsLiked(liked);
-      setLikes(comments.upvote + (liked ? 0 : 0)); // upvote is already correct
-    }
-  }, [UserDetails, comments.userVote, comments.upvote]);
-
-  // Log the props received by CommentCard
-  console.log('CommentCard props:', comments);
-
-  // if (isLoading) {
-  //   return (
-  //     <div className="min-h-screen bg-primary-background flex items-center justify-center">
-  //       <div className="text-lg">Loading...</div>
-  //     </div>
-  //   );
-  // }
+  if (!currentUser) {
+    return (
+      <div className="border-1 border-gray-700 pb-6 mb-6 last:border-b-0">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <h4 className="text-yellow-400 font-semibold text-lg mb-1">{comments.username}</h4>
+            <p className="text-gray-300 text-base leading-relaxed">
+              {comments.description}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="border-1 border-solid border-yellow-400 rounded-lg bg-white mb-6 p-2">
@@ -142,14 +106,20 @@ const CommentCard: React.FC<CommentCardProps> = ({ comments }) => {
           </p>
         </div>
         <div className="ml-4 flex items-center gap-2">
-          <button
-            onClick={LikeDisLikeAPI}
-            className={`flex items-center gap-1 px-3 py-1 rounded-full transition-colors ${isLiked ? 'text-blue-400 bg-blue-900/30' : 'text-gray-400 hover:text-blue-400 hover:bg-blue-900/20'
-              }`}
-          >
-            <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-            <span className="font-medium">{likes}</span>
-          </button>
+          <Tooltip title="Like">
+            <button
+              onClick={LikeDisLikeAPI}
+              className={`flex cursor-pointer items-center gap-1 px-3 py-1 rounded-full transition-colors ${isLiked
+                  ? 'text-blue-400 bg-blue-900/30'
+                  : 'text-gray-400 hover:text-blue-400 hover:bg-blue-900/20'
+                }`}
+              aria-label={isLiked ? 'Unlike comment' : 'Like comment'}
+            >
+              <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+              <span className="font-medium">{likes}</span>
+            </button>
+          </Tooltip>
+
         </div>
       </div>
     </div>

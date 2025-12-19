@@ -107,13 +107,13 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid" }) 
           {post.description.subject ? post.description.subject : "No description available."}
         </p>
 
-        <div className="flex items-center gap-2 text-secondary-dark text-sm mb-3">
-          <MapPin className="w-4 h-4" />
-          <span>{city}, {state}</span>
-        </div>
 
         <div className="flex items-center justify-between">
-          <button
+          <div className="flex items-center gap-2 text-secondary-dark text-sm">
+            <MapPin className="w-4 h-4" />
+            <span>{city}, {state}</span>
+          </div>
+          {/* <button
             onClick={() => setIsLiked(!isLiked)
             }
             className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm ${isLiked ? 'text-red-400 bg-red-900' : 'text-gray-400 bg-white border-1'
@@ -123,7 +123,7 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid" }) 
             <span className={isLiked ? `text-white` : `text-black`}>
               {post.description.upvote}
             </span>
-          </button>
+          </button> */}
 
           <NavLink to={post._id} className="text-orange-500 hover:text-orange-400 text-sm font-medium cursor-pointer">
             View details

@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react';
 // import FilterBar from './FilterBar';
 import DiscoveryCard from './DiscoveryCard';
 import FilterBar from './FilterBar';
-import dummyPosts from "@/Db/feeds";
-import { Search } from 'lucide-react';
+import mockDiscoveryPosts from "@/Db/feeds";
+import { Search, SearchX } from 'lucide-react';
 // import { getTokenFromCookie } from '@/utils/cookieUtils';
 const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
 
@@ -108,8 +108,8 @@ const Feed = () => {
         </div>
 
         {/* Filter Bar */}
-        <FilterBar 
-          layout={layout} 
+        <FilterBar
+          layout={layout}
           setLayout={setLayout}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
@@ -128,7 +128,7 @@ const Feed = () => {
             ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 "
             : "space-y-4"
         }>
-        {filteredPosts.map((post) => (
+          {filteredPosts.map((post) => (
             <DiscoveryCard
               key={post._id}
               post={post}
@@ -137,13 +137,19 @@ const Feed = () => {
           ))
 
           }
+          {/* <DiscoveryCard
+            key={mockDiscoveryPosts.data[0]._id}
+            post={mockDiscoveryPosts.data[0]}
+            layout={layout}
+          /> */}
         </div>
 
         {/* Empty State */}
         {filteredPosts.length === 0 && (
           <div className="text-center py-12">
             <div className="text-gray-500 mb-4">
-              <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              {/* <Search className="w-12 h-12 mx-auto mb-4 opacity-50" /> */}
+              <SearchX className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium mb-2">No sites found</p>
               <p className="text-sm">Try adjusting your search terms or filters</p>
             </div>

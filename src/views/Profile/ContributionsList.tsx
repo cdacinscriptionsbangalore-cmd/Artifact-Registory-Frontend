@@ -33,6 +33,7 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ comments }) => {
 
     handleResize();
     window.addEventListener('resize', handleResize);
+    console.log("displayPosts: ", displayPosts);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -62,7 +63,7 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ comments }) => {
           <h2 className="text-xl font-bold text-black">My Contributions</h2>
           <button
             onClick={() => setViewAll(!viewAll)}
-            className="text-orange-500 hover:text-orange-400 text-sm font-medium outline-none focus:outline-none cursor-pointer"
+            className="text-orange-500 cursor-pointer hover:text-orange-400 text-sm font-medium outline-none focus:outline-none cursor-pointer"
           >
             {viewAll ? 'View Less' : 'View All'}
           </button>
@@ -81,7 +82,7 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ comments }) => {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-black font-medium text-sm leading-tight">{post.description}</h3>
+                    <h3 className="text-black font-medium text-sm leading-tight">{post.title}</h3>
                     <div className="flex items-center gap-1 text-yellow-500 text-xs ml-2">
                       <Heart className="w-3 h-3 fill-current" />
                       {post.upvote}
@@ -114,7 +115,7 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ comments }) => {
         <h2 className="text-xl font-bold text-black">My Contributions</h2>
         <button
           onClick={() => setViewAll(!viewAll)}
-          className="text-orange-500 hover:text-orange-400 text-sm font-medium"
+          className="text-orange-500 cursor-pointer hover:text-orange-400 text-sm font-medium"
         >
           {viewAll ? 'View Less' : 'View All'}
         </button>
@@ -123,25 +124,41 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ comments }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {displayPosts.length !== 0 && displayPosts.map((post) => (
           <div key={post._id} className="card-styling rounded-lg p-4">
-            <div className="flex items-start justify-between mb-3">
-              <h3 className="text-black font-medium">{post.description}</h3>
+            <div className="flex items-start justify-between  space-x-3 ">
+              <div className="flex items-center">
+                <img
+                  // src={post.postImageUrl || '/default-profile.png'} 
+                  src={post.postImageUrl || ''}
+                  // src={post.userImageUrl || '/default-profile.png'} 
+                  alt={post.description}
+                  className="w-42 h-42 rounded-lg object-cover flex-shrink-0"
+                />
+
+              </div>
+              <div>
+                <h3 className="text-black font-medium">{post.title}</h3>
+                <div className="mt-3 text-sm">
+                  {post.description}
+                </div>
+
+              </div>
               <div className="flex items-center gap-1 text-orange-500">
                 <Heart className="w-4 h-4 fill-current" />
                 {post.upvote}
               </div>
+              <div className="text-black text-sm mb-3 line-clamp-3 mb-4 pb-4">
+                <div className="text-gray-500 text-xs absolute right-3 bottom-2">
+                  Added {post.description.subject} • {formatDate(post.createdAt)}
+                </div>
+              </div>
+
             </div>
 
-            <div className="text-black text-sm mb-2">
-              {/* Added {post.description.subject} • {formatDate(post.createdAt)} */}
-            </div>
 
-            <p className="text-black text-sm mb-3 line-clamp-3">
-              {post.description}
-            </p>
 
             <div className="flex flex-wrap gap-2 text-xs">
-              {/* <span className="bg-gray-700 text-orange-400 px-2 py-1 rounded">{post.topic}</span> */}
-              {/* <span className="bg-gray-700 text-blue-400 px-2 py-1 rounded">{post.script.join(', ')}</span> */}
+              {/* <span className="bg-gray-700 text-orange-400 px-2 py-1 rounded">{post.topic}</span>
+              <span className="bg-gray-700 text-blue-400 px-2 py-1 rounded">{post.script.join(', ')}</span> */}
             </div>
           </div>
         ))}

@@ -32,25 +32,25 @@ const MainRoutes = {
     {
       path: 'Feed',
       element: (
-        // <ProtectedRoute>
+        <ProtectedRoute>
           <Feed />
-        // </ProtectedRoute>
+        </ProtectedRoute>
       )
     },
     {
       path: 'upload',
       element: (
-        // <ProtectedRoute>
+        <ProtectedRoute>
           <Upload />
-        // </ProtectedRoute>
+        </ProtectedRoute>
       )
     },
     {
       path: 'Feed/:id',
       element: (
-        // <ProtectedRoute>
+        <ProtectedRoute>
           <InscriptionDetails />
-        // </ProtectedRoute>
+        </ProtectedRoute>
       )
     },
     {
@@ -64,9 +64,9 @@ const MainRoutes = {
     {
       path: 'profile',
       element: (
-        // <ProtectedRoute>
+        <ProtectedRoute>
           <Profile1 />
-        // </ProtectedRoute>
+        </ProtectedRoute>
       )
     },
     {

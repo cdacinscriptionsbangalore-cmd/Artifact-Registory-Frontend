@@ -9,7 +9,7 @@ interface ProfileHeaderProps {
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
   return (
-    <div className="rounded-lg pt-6 pb-6 mb-50 border-1 border-slate-800/50" style={{ minHeight: "400px", background: `url(${coverPhoto})`, position: "relative", backgroundRepeat: "no-repeat", backgroundAttachment: "fixed", backgroundPosition: "center", backgroundSize: "cover", }}>
+    <div className="rounded-lg pt-6 pb-6 mb-50 border-1 border-slate-800/50 min-h-[200px] md:min-h-[400px] bg-center bg-fill md:bg-cover bg-no-repeat" style={{ background: `url(${coverPhoto})`, position: "relative", backgroundSize:"cover", backgroundPosition:"center" }}>
       <div className="flex flex-col items-center" style={{ position: "absolute", bottom: 0, left: "50%", transform: "translate(-50%, 78%)", backgroundColor:"none" }}>
         <div className="relative">
           {/* only the first leter of the name */}

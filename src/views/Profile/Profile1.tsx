@@ -11,6 +11,7 @@ import ContributionsList from './ContributionsList';
  * - Uses real backend when token available and fetches succeed.
  * - Falls back to mockUser / mockPosts on any failure or missing token.
  */
+const USE_FALLBACK = true; // toggle when backend unavailable
 
 declare global {
   interface Window {
@@ -38,6 +39,23 @@ const Profile: React.FC = () => {
     return null;
   }
 
+  const buildMockComments = () =>
+    mockPosts.map((p) => ({
+      _id: `c-${p._id}`,
+      postId: p._id,
+      userId: mockUser._id,
+      username: mockUser.name,
+      userImageUrl: mockUser.avatarUrl,
+      postImageUrl: p.images?.image?.[0],
+      createdAt: p.createdAt,
+      updatedAt: p.createdAt,
+      description: p.description?.description || "Mock comment",
+      title: p.description?.title || "Mock title",
+      upvote: Math.floor(Math.random() * 20),
+      userVote: [],
+    }));
+
+
   useEffect(() => {
     let didFallback = false;
 
@@ -46,14 +64,7 @@ const Profile: React.FC = () => {
       SetUserDetails(mockUser);
       setPosts(mockPosts);
       // Create a simple comments fallback built from mockPosts (adjust as needed)
-      const mockComments = mockPosts.map((p) => ({
-        commentId: `c-${p._id}`,
-        postId: p._id,
-        text: p.description?.description || `${p.description?.title} — mock comment`,
-        createdAt: p.createdAt,
-        postTitle: p.description?.title || '',
-      }));
-      setComments(mockComments);
+      setComments(buildMockComments());
       // mark loading false
       setIsLoading(false);
       setIsLoadingPosts(false);
@@ -74,6 +85,15 @@ const Profile: React.FC = () => {
         throw err;
       }
     };
+    if (USE_FALLBACK) {
+      SetUserDetails(mockUser);
+      setPosts(mockPosts);
+      setComments(buildMockComments());
+      setIsLoading(false);
+      setIsLoadingPosts(false);
+      setIsLoadingComments(false);
+      return;
+    }
 
     const fetchAll = async () => {
       const token = getCookie('token');
@@ -172,13 +192,7 @@ const Profile: React.FC = () => {
         })));
       } catch (err) {
         console.error('Failed to fetch comments — using generated mock comments.', err);
-        const mockComments = mockPosts.map((p) => ({
-          commentId: `c-${p._id}`,
-          postId: p._id,
-          text: p.description?.description || `${p.description?.title} — mock comment`,
-          createdAt: p.createdAt,
-        }));
-        setComments(mockComments);
+        setComments(buildMockComments());
       } finally {
         setIsLoadingComments(false);
       }
@@ -191,13 +205,7 @@ const Profile: React.FC = () => {
         console.error('Unexpected error in profile fetching — using mock fallback.', e);
         SetUserDetails(mockUser);
         setPosts(mockPosts);
-        const mockComments = mockPosts.map((p) => ({
-          commentId: `c-${p._id}`,
-          postId: p._id,
-          text: p.description?.description || `${p.description?.title} — mock comment`,
-          createdAt: p.createdAt,
-        }));
-        setComments(mockComments);
+        setComments(buildMockComments());
         setIsLoading(false);
         setIsLoadingPosts(false);
         setIsLoadingComments(false);
@@ -206,85 +214,85 @@ const Profile: React.FC = () => {
 
     // no cleanup needed
   }, []);
-  
-  useEffect(() => {
-    // Get token at the beginning
-    const token = getCookie('token');
-    
-    if (!token) {
-      console.error('No token found');
-      // Redirect to login or handle no token case
-      return;
-    }
 
-    const fetchPosts = async () => {
-      try {
-        const response = await fetch(`${backendApiUrl}post/userProfile`, {
-          credentials: 'include',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '50d7115f-8f84-4e07-a8ae-1a155afe4864',
-          },
-          body: JSON.stringify({}),
-        });
-        const data = await response.json();
-        SetUserDetails(data.data);
-      } catch (error) {
-        console.error('Failed to fetch posts:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   // Get token at the beginning
+  //   const token = getCookie('token');
 
-    const fetchAllPosts = async () => {
-      try {
-        const response = await fetch(`${backendApiUrl}post/getAllUserPost`, {
-          credentials: 'include',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '50d7115f-8f84-4e07-a8ae-1a155afe4864',
-          },
-          body: JSON.stringify({}),
-        });
-        const data = await response.json();
-        setPosts(Array.isArray(data.data) ? data.data : []);
-      } catch (error) {
-        console.error('Failed to fetch posts:', error);
-      } finally {
-        setIsLoadingPosts(false);
-      }
-    };
+  //   if (!token) {
+  //     console.error('No token found');
+  //     // Redirect to login or handle no token case
+  //     return;
+  //   }
 
-    const fetchAllComments = async () => {
-      try {
-        const response = await fetch(`${backendApiUrl}post/getCommentByUser`, {
-          credentials: 'include',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '50d7115f-8f84-4e07-a8ae-1a155afe4864',
-          },
-          body: JSON.stringify({}),
-        });
-        const data = await response.json();
-        console.log(await data.data);
-        setComments(Array.isArray(data.data) ? data.data : []);
-      } catch (error) {
-        console.error('Failed to fetch posts:', error);
-      } finally {
-        setIsLoadingComments(false);
-      }
-    };
+  //   const fetchPosts = async () => {
+  //     try {
+  //       const response = await fetch(`${backendApiUrl}post/userProfile`, {
+  //         credentials: 'include',
+  //         method: 'POST',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           'Authorization': `Bearer ${token}`,
+  //           'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '50d7115f-8f84-4e07-a8ae-1a155afe4864',
+  //         },
+  //         body: JSON.stringify({}),
+  //       });
+  //       const data = await response.json();
+  //       SetUserDetails(data.data);
+  //     } catch (error) {
+  //       console.error('Failed to fetch posts:', error);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
 
-    fetchAllComments();
-    fetchAllPosts();
-    fetchPosts();
-  }, []);
+  //   const fetchAllPosts = async () => {
+  //     try {
+  //       const response = await fetch(`${backendApiUrl}post/getAllUserPost`, {
+  //         credentials: 'include',
+  //         method: 'POST',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           'Authorization': `Bearer ${token}`,
+  //           'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '50d7115f-8f84-4e07-a8ae-1a155afe4864',
+  //         },
+  //         body: JSON.stringify({}),
+  //       });
+  //       const data = await response.json();
+  //       setPosts(Array.isArray(data.data) ? data.data : []);
+  //     } catch (error) {
+  //       console.error('Failed to fetch posts:', error);
+  //     } finally {
+  //       setIsLoadingPosts(false);
+  //     }
+  //   };
+
+  //   const fetchAllComments = async () => {
+  //     try {
+  //       const response = await fetch(`${backendApiUrl}post/getCommentByUser`, {
+  //         credentials: 'include',
+  //         method: 'POST',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           'Authorization': `Bearer ${token}`,
+  //           'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '50d7115f-8f84-4e07-a8ae-1a155afe4864',
+  //         },
+  //         body: JSON.stringify({}),
+  //       });
+  //       const data = await response.json();
+  //       console.log(await data.data);
+  //       setComments(Array.isArray(data.data) ? data.data : []);
+  //     } catch (error) {
+  //       console.error('Failed to fetch posts:', error);
+  //     } finally {
+  //       setIsLoadingComments(false);
+  //     }
+  //   };
+
+  //   fetchAllComments();
+  //   fetchAllPosts();
+  //   fetchPosts();
+  // }, []);
 
 
   // Keep the simple loading state UI so styling can be iterated on

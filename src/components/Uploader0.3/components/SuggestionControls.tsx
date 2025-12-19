@@ -30,7 +30,7 @@ const SuggestionControls: React.FC<SuggestionControlsProps> = ({
       <button
         onClick={() => onFetch()}
         disabled={isFetching}
-        className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm"
+        className="flex cursor-pointer items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm"
       >
         {/* <WandSparkles /> */}
         <AutoAwesomeOutlinedIcon />

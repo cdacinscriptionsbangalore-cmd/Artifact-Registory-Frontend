@@ -13,14 +13,14 @@ import placeholderImage2 from '@/assets/parallaxImages/banner2.jpg';
 import placeholderImage3 from '@/assets/parallaxImages/banner3.jpg';
 import placeholderImage4 from '@/assets/parallaxImages/banner4.png';
 import ImageCarousel1 from './ImageCarousel1';
-import { Snackbar, Alert, Slide } from "@mui/material";
+import { Snackbar, Alert, Slide, Tooltip } from "@mui/material";
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import RatingModal1 from './RatingModal1';
 import cdacRoundLogo from '@/assets/cdacroundlogo.png';
 import type { User } from '@/types';
 import ShareModal from '@/components/ShareModal/ShareModal';
 
-const USE_FALLBACK = false;
+const USE_FALLBACK = true;
 
 export interface Comment {
     id?: string;
@@ -799,10 +799,13 @@ const InscriptionDetailsPage: React.FC = () => {
                             {/* Rating and Actions */}
                             <div className="flex sm:flex-row sm:items-center sm:justify-between gap-4">
                                 <div className="flex items-center gap-4">
-                                    <span className="inline-flex items-center gap-x-1.5 px-3 py-2 rounded-lg font-medium bg-teal-500 hover:bg-teal-300 border-1 border-teal-600 text-white">
-                                        <Star />{postToRender.rating ? postToRender.rating : 0}
-                                        {/* <Star />   {post.rating && <StarRating rating={post.rating} />} */}
-                                    </span>
+                                    <Tooltip title="Average rating by users" className='cursor-pointer'>
+                                        <span className="inline-flex items-center gap-x-1.5 px-3 py-2 rounded-lg font-medium bg-teal-500 hover:bg-teal-300 border-1 border-teal-600 text-white">
+                                            <Star />{postToRender.rating ? postToRender.rating : 0}
+                                            {/* <Star />   {post.rating && <StarRating rating={post.rating} />} */}
+                                        </span>
+                                    </Tooltip>
+
                                 </div>
                                 <div className="flex gap-3">
                                     <button
@@ -820,15 +823,18 @@ const InscriptionDetailsPage: React.FC = () => {
                                     </button> */}
                                     {postToRender.description.geolocation?.lat !== undefined &&
                                         postToRender.description.geolocation?.lon !== undefined && (
-                                            <button
-                                                onClick={() => handleClick(
-                                                    postToRender.description.geolocation!.lat!,
-                                                    postToRender.description.geolocation!.lon
-                                                )}
-                                                className="md:px-6 md:py-2 px-3 py-1 bg-white border-1 border-gray-400 text-white rounded-lg hover:bg-gray-200 cursor-pointer transition-colors font-medium"
-                                            >
-                                                <LocationOnIcon className='w-5 h-5 text-red-500' />
-                                            </button>
+                                            <Tooltip title="Locate on Google Maps">
+                                                <button
+                                                    onClick={() => handleClick(
+                                                        postToRender.description.geolocation!.lat!,
+                                                        postToRender.description.geolocation!.lon
+                                                    )}
+                                                    className="md:px-6 md:py-2 px-3 py-1 bg-white border-1 border-gray-400 text-white rounded-lg hover:bg-gray-200 cursor-pointer transition-colors font-medium"
+                                                >
+                                                    <LocationOnIcon className='w-5 h-5 text-red-500' />
+                                                </button>
+                                            </Tooltip>
+
                                         )}
                                     {/* {post.description.geolocation?.lat !== undefined &&
                                         post.description.geolocation?.lon !== undefined && (
@@ -944,7 +950,7 @@ const InscriptionDetailsPage: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                    <div className="w-auto overflow-y-auto md:max-h-[780px] pr-2">
+                    <div className="w-auto overflow-y-auto max-h-[380px] md:max-h-[960px] pr-2">
                         {/* {comments.map((comment: Comment) => (
                             <CommentCard key={comment.id ?? comment._id} comments={comment} currentUser={userDetails} />
                         ))} */}
