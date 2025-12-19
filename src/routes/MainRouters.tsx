@@ -1,6 +1,7 @@
 import { ProtectedRoute, PublicRoute } from "@/layouts/ProtectedLayOut/ProtectedLayout";
 import HomePage from "@/views/Home/Home";
 import InscriptionDetails from "@/views/InscriptionDetailPage.tsx/InscriptionDetails";
+import NotFound from "@/views/NotFound/NotFound";
 import Upload from "@/views/Upload/Upload";
 import BaseLayout from "@layouts/MainLayout/BaseLayout";
 import AuthPage from "@views/Auth/AuthPage";
@@ -19,7 +20,7 @@ const MainRoutes = {
       index: true,
       element: (
         // <ProtectedRoute>
-          <Navigate to="home" replace />
+        <Navigate to="home" replace />
         // </ProtectedRoute>
       )
     },
@@ -40,9 +41,9 @@ const MainRoutes = {
     {
       path: 'upload',
       element: (
-        <ProtectedRoute>
+        // <ProtectedRoute>
           <Upload />
-        </ProtectedRoute>
+        // </ProtectedRoute>
       )
     },
     {
@@ -64,9 +65,9 @@ const MainRoutes = {
     {
       path: 'profile',
       element: (
-        <ProtectedRoute>
-          <Profile1 />
-        </ProtectedRoute>
+        // <ProtectedRoute>
+        <Profile1 />
+        // </ProtectedRoute>
       )
     },
     {
@@ -84,6 +85,10 @@ const MainRoutes = {
           <AuthPage />
         </PublicRoute>
       )
+    },
+    {
+      path: '*',
+      element: <NotFound />
     }
   ]
 };

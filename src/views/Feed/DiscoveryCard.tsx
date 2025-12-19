@@ -58,11 +58,13 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid" }) 
               {post.description.subject}
             </p>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-gray-400 text-sm">
-                <MapPin className="w-4 h-4" />
-                <span>{city}, {state}</span>
-              </div>
+            <div className={`flex ${city && state ? "items-center" : "items-end"} justify-between`}>
+              {city && state &&
+                <div className="flex items-center gap-2 text-gray-400 text-sm">
+                  <MapPin className="w-4 h-4" />
+                  <span>{city}, {state}</span>
+                </div>
+              }
 
               <NavLink to={post._id} className="text-orange-500 hover:text-orange-400 text-sm font-medium cursor-pointer">
                 View details

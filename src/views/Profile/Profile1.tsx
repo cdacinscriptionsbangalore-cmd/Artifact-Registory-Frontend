@@ -11,7 +11,7 @@ import ContributionsList from './ContributionsList';
  * - Uses real backend when token available and fetches succeed.
  * - Falls back to mockUser / mockPosts on any failure or missing token.
  */
-const USE_FALLBACK = true; // toggle when backend unavailable
+const USE_FALLBACK = false; // toggle when backend unavailable
 
 declare global {
   interface Window {

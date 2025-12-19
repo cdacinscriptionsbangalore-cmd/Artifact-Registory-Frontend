@@ -15,7 +15,7 @@ export const useInscriptionUploader = () => {
     description: {},
     topic: "",
     script: [],
-    type: ""
+    type: "Stone"
   });
 
   const handleInputChange = (field: string, value: any) => {

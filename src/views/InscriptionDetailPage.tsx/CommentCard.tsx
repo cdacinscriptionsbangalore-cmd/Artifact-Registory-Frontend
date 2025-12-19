@@ -119,7 +119,6 @@ const CommentCard: React.FC<CommentCardProps> = ({ comments, currentUser }) => {
               <span className="font-medium">{likes}</span>
             </button>
           </Tooltip>
-
         </div>
       </div>
     </div>

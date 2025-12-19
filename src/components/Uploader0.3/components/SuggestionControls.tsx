@@ -22,7 +22,7 @@ const SuggestionControls: React.FC<SuggestionControlsProps> = ({
     onUseSuggestion(suggestion);
     try {
       await navigator.clipboard.writeText(suggestion);
-    } catch { }
+    } catch {}
   };
 
   return (
