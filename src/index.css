@@ -97,7 +97,7 @@
   /* top:1.5rem; */
   width: 90%;
   /* margin: 1rem auto 0 auto; */
-  border-radius: 1.5rem;
+  /* border-radius: 1.5rem; */
   /* transition: background-color 1s ease; */
   /* display: flex;
   justify-content: center; */
@@ -106,8 +106,7 @@
   /* background: linear-gradient(to right, #000147, #1BADD9); */
   /* background: #0A0032; */
   box-shadow: rgba(0, 0, 0, 0.5) 0px 5px 15px;
-
-  animation: navbarFloatingDown 0.7s ease-in-out forwards;
+  /* animation: navbarFloatingDown 0.7s ease-in-out forwards; */
 }
 
 .w-100C {
