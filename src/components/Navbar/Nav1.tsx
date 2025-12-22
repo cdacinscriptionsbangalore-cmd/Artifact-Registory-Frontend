@@ -56,7 +56,7 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
         { path: "/home", label: "Get Started", scrollvalue: 4600, icon: "" },
     ];
 
-    const linksToShow = !authenticated  ? protectedLinks : mobileNavbarOpen? publicLinksMobile:publicLinks;
+    const linksToShow = authenticated  ? protectedLinks : mobileNavbarOpen? publicLinksMobile:publicLinks;
 
     const handleScroll = () => setScrollPosition(window.scrollY);
 
