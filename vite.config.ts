@@ -13,13 +13,7 @@ export default defineConfig({
   server: {
     host: 'localhost',
     port: 3000,
-    strictPort: true,
-    allowedHosts: [
-      "7a93b4c1bde2.ngrok-free.app",
-      "fccd5be1b946.ngrok-free.app",
-      "d1f6d6cc6042.ngrok-free.app",
-      "a44e7b19701e.ngrok-free.app"],
-      
+    strictPort: true,      
   },
   plugins: [
     react(),
