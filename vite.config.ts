@@ -1,7 +1,21 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react-swc';
 import path from 'path';
-import { defineConfig } from 'vite';
+import { defineConfig, Plugin } from 'vite';
+
+// Plugin to inject CSP nonce placeholder
+function cspNoncePlugin(): Plugin {
+  return {
+    name: 'csp-nonce-plugin',
+    transformIndexHtml(html) {
+      // Add meta tag placeholder for nonce (use `name` to match nginx sub_filter)
+      return html.replace(
+        '<head>',
+        `<head>\n    <meta name="csp-nonce" content="\${csp_nonce}">`
+      );
+    }
+  };
+}
 
 export default defineConfig({
   base: '/',
@@ -12,7 +26,11 @@ export default defineConfig({
   server: {
     host: 'localhost',
     port: 3000,
+<<<<<<< HEAD
     strictPort: true,
+=======
+    strictPort: true,      
+>>>>>>> 2fe486c (csp issues)
   },
 
   plugins: [
@@ -29,6 +47,10 @@ export default defineConfig({
       ]
     }),
     tailwindcss(),
+<<<<<<< HEAD
+=======
+    cspNoncePlugin()
+>>>>>>> 2fe486c (csp issues)
   ],
 
   css: {
