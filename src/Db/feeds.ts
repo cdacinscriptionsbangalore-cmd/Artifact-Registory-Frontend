@@ -89,6 +89,7 @@ const mockDiscoveryPosts = {
         {
             "_id": "6913054f05959ad242fe9751",
             "user_id": "69118409d23e86bbb9cb8ce4",
+            "username": "testuser123",
             "createdAt": "2025-11-11T09:43:43.041+00:00",
             "updatedAt": "2025-11-11T09:43:46.201+00:00",
             "images": {
@@ -114,9 +115,11 @@ const mockDiscoveryPosts = {
             "topic": "",
             "script": [],
             "type": "Stone",
+            "visibility": true,
             "distance": null,
             "rating": 0.0,
-            "userrating": []
+            "userrating": [],
+            "postedAnonymously": true
         },
         {
             "_id": "69130e4d05959ad242fe9756",

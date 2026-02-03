@@ -395,6 +395,7 @@ const InscriptionDetailsPage: React.FC = () => {
 
     // Add this function inside your component
     useEffect(() => {
+        setLoading(true);
         if (USE_FALLBACK) {
             // 🔹 hard stop: no backend calls
             setUserDetails({
@@ -439,7 +440,6 @@ const InscriptionDetailsPage: React.FC = () => {
             }
 
             try {
-                setLoading(true);
                 const token = getCookie('token');
                 const response = await fetch(`${backendApiUrl}post/getAllPost`, {
                     credentials: 'include',
@@ -465,7 +465,6 @@ const InscriptionDetailsPage: React.FC = () => {
             } catch (error) {
                 console.error("Failed to fetch posts:", error);
             } finally {
-                setLoading(false);
             }
         };
 
@@ -476,7 +475,6 @@ const InscriptionDetailsPage: React.FC = () => {
                 return;
             }
             try {
-                setLoading(true);
                 const token = getCookie('token');
                 const myHeaders = new Headers();
                 myHeaders.append("Content-Type", "application/x-www-form-urlencoded");

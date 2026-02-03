@@ -5,8 +5,12 @@ import DiscoveryCard from './DiscoveryCard';
 import FilterBar from './FilterBar';
 import mockDiscoveryPosts from "@/Db/feeds";
 import { SearchX } from 'lucide-react';
+import InfiniteScroll from 'react-infinite-scroll-component';
+import { CircularProgress } from '@mui/material';
 // import { getTokenFromCookie } from '@/utils/cookieUtils';
 const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
+
+const isOffline = true;   // true → use mock data, false → use API
 
 export interface Post {
   _id: string;
@@ -22,6 +26,7 @@ export interface Post {
   script: string[];
   [key: string]: any;
 }
+const PAGE_SIZE = 4;
 
 // Main Discovery Feed Component
 const Feed = () => {
@@ -46,6 +51,11 @@ const Feed = () => {
 
   const [posts, setPosts] = useState<Post[]>([]);
   // const [isLoading, setIsLoading] = useState(null);
+  // const [visiblePosts, setVisiblePosts] = useState(
+  //   mockDiscoveryPosts.data.slice(0, PAGE_SIZE)
+  // );
+  const [visiblePosts, setVisiblePosts] = useState<Post[]>([]); // paginated slice
+
 
   function getCookie(name: string): string | null {
     const value = `; ${document.cookie}`;
@@ -56,62 +66,83 @@ const Feed = () => {
     return null;
   }
 
-  // Fetch posts from API
-  useEffect(() => {
-    // setIsLoading(true);
-    const fetchPosts = async () => {
-      try {
-        const token = getCookie('token');
-        const response = await fetch(`${backendApiUrl}post/getAllPost`, {
-          credentials: 'include',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            "X-XSRF-TOKEN": getCookie('XSRF-TOKEN') || ''
-          },
-          body: JSON.stringify({}),
-        });
-        const data = await response.json();
-        setPosts(Array.isArray(data.data) ? data.data : []);
-      } catch (error) {
-        console.error('Failed to fetch posts:', error);
-      }
-    };
-    const fetchUserDetailsOfPosts = async () => {
-      try {
-        const token = getCookie('token');
-        const response = await fetch(`${backendApiUrl}post/userProfile`, {
-          credentials: 'include',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '50d7115f-8f84-4e07-a8ae-1a155afe4864',
-          },
-          body: JSON.stringify({}),
-        });
-        const data = await response.json();
-        SetUserDetails(data.data);
-      } catch (error) {
-        console.error('Failed to fetch posts:', error);
-      } finally {
-        console.log("Fetched User Posts: ", UserDetails);
-      }
-    };
+  const fetchPosts = async () => {
+    try {
+      let allPosts: Post[] = [];
 
-    fetchPosts();
-    fetchUserDetailsOfPosts();
-    // setIsLoading(false);
-  }, []);
+      if (isOffline) {
+        allPosts = mockDiscoveryPosts.data;
+      } else {
+        const token = getCookie("token");
+        const response = await fetch(`${backendApiUrl}post/getAllPost`, {
+          credentials: "include",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            "X-XSRF-TOKEN": getCookie("XSRF-TOKEN") || "",
+          },
+          body: JSON.stringify({}),
+        });
+
+        const data = await response.json();
+        allPosts = Array.isArray(data.data) ? data.data : [];
+      }
+
+      setPosts(allPosts);
+      setVisiblePosts(allPosts.slice(0, PAGE_SIZE)); // initialize infinite scroll
+    } catch (error) {
+      console.error("Failed to fetch posts:", error);
+    }
+  };
+
+  const loadMorePosts = () => {
+    setTimeout(() => {
+      const next = posts.slice(
+        visiblePosts.length,
+        visiblePosts.length + PAGE_SIZE
+      );
+      setVisiblePosts(prev => [...prev, ...next]);
+    }, 800);
+  };
+
+  const fetchUserDetailsOfPosts = async () => {
+    try {
+      const token = getCookie('token');
+      const response = await fetch(`${backendApiUrl}post/userProfile`, {
+        credentials: 'include',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '50d7115f-8f84-4e07-a8ae-1a155afe4864',
+        },
+        body: JSON.stringify({}),
+      });
+      const data = await response.json();
+      SetUserDetails(data.data);
+    } catch (error) {
+      console.error('Failed to fetch posts:', error);
+    } finally {
+      console.log("Fetched User Posts: ", UserDetails);
+    }
+  };
 
   // Filter posts based on search term
-  const filteredPosts = posts.filter(post =>
+  const filteredPosts = visiblePosts.filter(post =>
     post?.description?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     post?.description?.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     post?.description?.geolocation?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    Array.isArray(post?.script) && post.script.some(script => script?.toLowerCase().includes(searchTerm.toLowerCase()))
+    (Array.isArray(post?.script) &&
+      post.script.some(s =>
+        s?.toLowerCase().includes(searchTerm.toLowerCase())
+      ))
   );
+
+  useEffect(() => {
+    fetchPosts();
+    fetchUserDetailsOfPosts();
+  }, []);
 
   // Responsive layout adjustment
   useEffect(() => {
@@ -153,10 +184,10 @@ const Feed = () => {
         {/* Posts Grid/List */}
         <div className={
           layout === 'grid'
-            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 "
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6 "
             : "space-y-4"
         }>
-          {filteredPosts.map((post) => (
+          {/* {filteredPosts.map((post) => (
             <DiscoveryCard
               key={post._id}
               post={post}
@@ -164,13 +195,35 @@ const Feed = () => {
             />
           ))
 
-          }
-          {/* <DiscoveryCard
-            key={mockDiscoveryPosts.data[1]._id}
-            post={mockDiscoveryPosts.data[2]}
-            layout={layout}
-            loading={isLoading}
-          /> */}
+          } */}
+          <InfiniteScroll
+            dataLength={visiblePosts.length}
+            next={loadMorePosts}
+            hasMore={visiblePosts.length < posts.length}
+            loader={<CircularProgress enableTrackSlot style={{ color: '#FF6B35', display: 'block', margin: '10rem auto 0 auto' }} />}
+            endMessage={
+              <p className="text-center text-gray-400 mt-15" >
+                <b>No more posts</b>
+              </p>
+            }
+          >
+            {/* <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: "20px",
+              }}
+            > */}
+            <div className="grid sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6">
+              {filteredPosts.map(post => (
+                <DiscoveryCard
+                  key={post._id}
+                  post={post}
+                  layout={layout}
+                />
+              ))}
+            </div>
+          </InfiniteScroll>
         </div>
 
         {/* Empty State */}

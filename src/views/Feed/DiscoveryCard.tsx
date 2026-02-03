@@ -19,6 +19,7 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
   const city = post?.description?.geolocation?.city ?? "Unknown";
   const state = post?.description?.geolocation?.state ?? "Unknown";
 
+  console.log(post);
   if (layout === "list") {
     return (
       <div className="bg-secondary-background rounded-lg overflow-hidden hover:bg-gray-750 transition-colors">
@@ -97,7 +98,7 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
             (<div className="bg-primary-background bg-opacity-80 rounded-lg p-3 flex items-center justify-between m-3 ">
               <div className="flex flex-col">
                 <span className="text-white font-semibold text-lg " >{post.description.title ? post.description.title : "Untitled"}</span>
-                <span className="text-white font-semibold text-xs " >Posted by: {post.user ? post.user : "Anonymous"}</span>
+                <span className="text-white font-semibold text-xs " >Posted by: {post.visibility ? post.username : "Anonymous"}</span>
               </div>
               <div className="flex items-center gap-2">
                 {post.rating > 0 ? (
@@ -140,7 +141,7 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
             </span>
           </button> */}
 
-          <NavLink to={post._id} className="text-orange-500 hover:text-orange-400 text-sm font-medium cursor-pointer">
+          <NavLink to={post._id} className=" text-orange-500 hover:text-orange-400 text-sm font-medium cursor-pointer">
             View details
           </NavLink>
         </div>
