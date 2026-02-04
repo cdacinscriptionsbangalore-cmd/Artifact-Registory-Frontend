@@ -19,7 +19,7 @@ import RatingModal1 from './RatingModal1';
 import cdacRoundLogo from '@/assets/cdacroundlogo.png';
 import type { User } from '@/types';
 import ShareModal from '@/components/ShareModal/ShareModal';
-import { apiClient } from '@/utils/http/clients/backendApiClientGeneral';
+import { coreBackendClient } from '@/utils/http/clients/coreBackend.client';
 
 const USE_FALLBACK = false;
 
@@ -415,8 +415,8 @@ const InscriptionDetailsPage: React.FC = () => {
         const fetchUserDetails = async () => {
             try {
                 const token = getCookie('token');
-                const response = await apiClient.post(`${backendApiUrl}post/userProfile`);
-                const {data} = response;
+                const response = await coreBackendClient.post(`${backendApiUrl}post/userProfile`);
+                const { data } = response;
                 setUserDetails(data.data);
             } catch (error) {
                 console.error("Failed to fetch user details:", error);
@@ -433,7 +433,7 @@ const InscriptionDetailsPage: React.FC = () => {
 
             try {
                 const token = getCookie('token');
-                const response = await apiClient.post(`${backendApiUrl}post/getAllPost`);
+                const response = await coreBackendClient.post(`${backendApiUrl}post/getAllPost`);
 
                 const data = response.data;
                 const allPosts = Array.isArray(data.data) ? data.data : [];
@@ -475,7 +475,7 @@ const InscriptionDetailsPage: React.FC = () => {
                     redirect: "follow"
                 };
 
-                const response = await apiClient.post(`${backendApiUrl}post/getPostDiscription`)
+                const response = await coreBackendClient.post(`${backendApiUrl}post/getPostDiscription`);
 
                 const data = response.data;
                 const fetchedComments = Array.isArray(data.data) ? data.data : [];
@@ -643,11 +643,11 @@ const InscriptionDetailsPage: React.FC = () => {
             body: urlencoded,
             redirect: 'follow'
         };
-        const response = await fetch(`${backendApiUrl}post/addRating`, requestOptions);
-        if (!response.ok) {
+        const response = await coreBackendClient.post(`${backendApiUrl}post/addRating`);
+        if (!response.data.ok) {
             throw new Error(`Error: ${response.statusText}`);
         }
-        const result = await response.text();
+        const result = await response.data.text();
         return result;
     };
 

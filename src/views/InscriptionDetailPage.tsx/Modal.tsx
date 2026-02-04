@@ -4,7 +4,7 @@ import { useState } from "react";
 // import { getCookie } from "@/utils/Auth/auth";
 
 import { Snackbar, Alert, Slide } from "@mui/material";
-import { apiClient } from "@/utils/http/clients/backendApiClientGeneral";
+import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
 
 const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
 
@@ -104,7 +104,7 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
         redirect: "follow"
       };
 
-      const response = await apiClient.post(`${backendApiUrl}post/addPoastDiscription`);
+      const response = await coreBackendClient.post(`${backendApiUrl}post/addPoastDiscription`);
 
       if (!response.data.ok) {
         const errorText = await response.data.text();
