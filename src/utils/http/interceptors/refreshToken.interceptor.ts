@@ -1,5 +1,5 @@
 import { authStore } from "../../../store/authStore";
-import type { AxiosInstance } from "axios";
+import { authClient } from "../clients/authClient.client";
 
 let isRefreshing = false;
 let pendingQueue: ((token: string) => void)[] = [];
@@ -9,8 +9,8 @@ const processQueue = (token: string) => {
   pendingQueue = [];
 };
 
-export const refreshTokenInterceptor = (apiClient: AxiosInstance) => {
-  apiClient.interceptors.response.use(
+export const refreshTokenInterceptor = () => {
+  authClient.interceptors.response.use(
     (res) => res,
     async (error) => {
       const originalRequest = error.config;
@@ -26,7 +26,7 @@ export const refreshTokenInterceptor = (apiClient: AxiosInstance) => {
           return new Promise((resolve) => {
             pendingQueue.push((token: string) => {
               originalRequest.headers.Authorization = `Bearer ${token}`;
-              resolve(apiClient(originalRequest));
+              resolve(authClient(originalRequest));
             });
           });
         }
@@ -34,7 +34,7 @@ export const refreshTokenInterceptor = (apiClient: AxiosInstance) => {
         isRefreshing = true;
 
         try {
-          const res = await apiClient.post("/auth/refresh");
+          const res = await authClient.post("/auth/refresh");
 
           const newAccessToken = res.data.auth_token;
 
@@ -42,7 +42,7 @@ export const refreshTokenInterceptor = (apiClient: AxiosInstance) => {
           processQueue(newAccessToken);
 
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          return apiClient(originalRequest);
+          return authClient(originalRequest);
         } catch (refreshError) {
           authStore.clear();
           window.location.href = "/login";
