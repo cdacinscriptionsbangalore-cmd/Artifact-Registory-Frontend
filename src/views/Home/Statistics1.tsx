@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import "./Statistics.css";
 import { getCookie } from "@/components/Uploader0.3/utils/Auth/auth";
 import { NavLink } from "react-router-dom";
+import { authClient } from "@/utils/http/clients/authClient.client";
 
 const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
 
@@ -21,15 +22,16 @@ const Statistics: React.FC = () => {
     useEffect(() => {
         const fetchStatistics = async () => {
             try {
-                const xsrfToken = getCookie("XSRF-TOKEN");
-                const response = await fetch(`${backendApiUrl}post/public/getDashboardCounts`, {
-                    credentials: 'include',
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        "X-XSRF-TOKEN": xsrfToken || ""
-                    },
-                });
+                // const xsrfToken = getCookie("XSRF-TOKEN");
+                const response = await authClient.get(`/post/public/getDashboardCounts`);
+                // const response = await fetch(`${backendApiUrl}post/public/getDashboardCounts`, {
+                //     credentials: 'include',
+                //     method: 'GET',
+                //     headers: {
+                //         'Content-Type': 'application/json',
+                //         "X-XSRF-TOKEN": xsrfToken || ""
+                //     },
+                // });
                 const data = await response.json();
                 if (data && data.data) {
                     const updatedStatistics = statistics.map(stat => {
