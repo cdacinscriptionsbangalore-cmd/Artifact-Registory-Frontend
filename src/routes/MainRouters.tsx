@@ -35,7 +35,7 @@ const MainRoutes = {
       element: (
         // <ProtectedRoute>
           <Feed />
-        {/* </ProtectedRoute> */}
+        // </ProtectedRoute>
       )
     },
     {
