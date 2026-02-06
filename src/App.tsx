@@ -12,7 +12,7 @@ function App() {
   return (
 
     <div className={`${styles["root-background"]} ${styles["root-background-right"]}`}>
-      <AuthProvider >
+      <AuthProvider>
         <RouterProvider router={router} />
       </AuthProvider>
     </div>

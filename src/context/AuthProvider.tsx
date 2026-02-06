@@ -1,30 +1,32 @@
-import React, { useState }  from 'react'
-import AuthContext from './auth-context';
+import React, { useState } from 'react'
+import AuthContext from './AuthContextType.ts';
 
-const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [user, setUser] = useState(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+const AuthState = (props: { children: React.ReactNode }) => {
+    const [token, setToken] = useState<string | null>(null);
 
-    const login = (userData) => {
-        setUser(userData);
-        setIsAuthenticated(true);
-    };
+    const getToken = () => {
+        return token;
+    }
 
-    const logout = () => {
-        setUser(null);
-        setIsAuthenticated(false);
-    };
+    const clear = () => {
+        setToken(null);
+    }
+
+    // const isAuthenticated = (): boolean => {
+    //     return token !== null;
+    // }
 
     const value = {
-        user,
-        isAuthenticated,
-        login,
-        logout,
+        getToken,
+        clear,
+        isAuthenticated: token !== null
     };
 
     return (
-        <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+        <AuthContext.Provider value={value}>
+            {props.children}
+        </AuthContext.Provider>
     )
 }
 
-export default AuthProvider
+export default AuthState

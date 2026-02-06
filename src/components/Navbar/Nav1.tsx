@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import type { ReactNode } from "react";
 import logo from "@assets/Frame1.png";
 import { NavLink, useNavigate } from "react-router-dom";
-import { getCookie, logout } from "@/utils/auth";
+import { logout } from "@/utils/auth";
 import { Home, LogIn, LogOut, Menu, Upload, X } from "lucide-react";
 import meityLogo from "@assets/meitylogo2.png";
 import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
@@ -10,6 +10,7 @@ import AccountBoxOutlinedIcon from "@mui/icons-material/AccountBoxOutlined";
 import { clearUserActivityTracking, trackUserActivity } from "./EventManager";
 import { jwtDecode } from "jwt-decode";
 import CircularProgess from "../Spinner/CircularProgess";
+import AuthContext from "@/context/AuthContextType";
 
 interface NavItem {
     path: string;
@@ -28,6 +29,7 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
     const [mobileNavbarOpen, setMobileNavbarOpen] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     const [scrollPosition, setScrollPosition] = useState(0);
+    const authCtx = useContext(AuthContext);
 
     const navigate = useNavigate();
 
@@ -61,8 +63,8 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
     const handleScroll = () => setScrollPosition(window.scrollY);
 
     const syncAuthState = () => {
-        const token = getCookie("token");
-        setAuthenticated(!!token);
+        const token = authCtx.getToken();
+        setAuthenticated(token !== null);
     };
 
     const openMobileNavbarHandler = () => {
@@ -86,38 +88,38 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
         }, 300);
     }
 
-    useEffect(() => {
-        window.addEventListener("scroll", handleScroll);
-        syncAuthState();
+    // useEffect(() => {
+    //     window.addEventListener("scroll", handleScroll);
+    //     syncAuthState();
 
-        const token = getCookie("token");
-        if (!token) return;
+    //     const token = authCtx.getToken();
+    //     if (token === null) return;
 
-        const decoded: any = jwtDecode(token);
-        const sessionTimeout =
-            (decoded.exp - decoded.iat) * 1000;
+    //     const decoded: any = jwtDecode(token);
+    //     const sessionTimeout =
+    //         (decoded.exp - decoded.iat) * 1000;
 
-        const handleSessionTimeout = () => {
-            logout();
-            setAuthenticated(false);
-            navigate("/login", { replace: true });
-        };
+    //     const handleSessionTimeout = () => {
+    //         logout();
+    //         setAuthenticated(false);
+    //         navigate("/login", { replace: true });
+    //     };
 
-        const activityEvents = [
-            "mousemove",
-            "click",
-            "keydown",
-            "scroll",
-            "touchstart",
-        ];
+    //     const activityEvents = [
+    //         "mousemove",
+    //         "click",
+    //         "keydown",
+    //         "scroll",
+    //         "touchstart",
+    //     ];
 
-        trackUserActivity(activityEvents, sessionTimeout, handleSessionTimeout);
+    //     trackUserActivity(activityEvents, sessionTimeout, handleSessionTimeout);
 
-        return () => {
-            clearUserActivityTracking(activityEvents);
-            window.removeEventListener("scroll", handleScroll);
-        };
-    }, [mobileNavbarOpen, openMobileNavbarHandler, setMobileNavbarOpen]);
+    //     return () => {
+    //         clearUserActivityTracking(activityEvents);
+    //         window.removeEventListener("scroll", handleScroll);
+    //     };
+    // }, [mobileNavbarOpen, openMobileNavbarHandler, setMobileNavbarOpen]);
 
     return (
         <div className="navbar-gradient">

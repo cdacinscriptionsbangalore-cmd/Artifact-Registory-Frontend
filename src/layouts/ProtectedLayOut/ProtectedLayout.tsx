@@ -1,16 +1,16 @@
 // components/ProtectedRoute.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useContext } from 'react';
 import { Navigate } from 'react-router-dom';
-import { isAuthenticated } from '@/utils/auth';
-import CircularProgess from '@components/Spinner/CircularProgess';
-import { useLocation } from "react-router-dom";
+// import { isAuthenticated } from '@/utils/auth';
+import AuthContext from '@/context/AuthContextType';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const isAuth = isAuthenticated();
+  const { isAuthenticated } = useContext(AuthContext);
+  const isAuth = isAuthenticated;
 
   if (!isAuth) {
     return <Navigate to="/login" replace />;
@@ -25,8 +25,9 @@ interface PublicRouteProps {
   children: React.ReactNode;
 }
 
-export const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const isAuth = isAuthenticated();
+export const PublicRoute: React.FC<PublicRouteProps> = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated } = useContext(AuthContext);
+  const isAuth = isAuthenticated;
 
   if (isAuth) {
     return <Navigate to="/feed" replace />;
@@ -34,5 +35,3 @@ export const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
   return <>{children}</>;
 };
-
-// export { ProtectedRoute, PublicRoute };

@@ -9,7 +9,7 @@ import cdacRoundLogo from "@assets/cdacroundlogo.png";
 import { coreBackendClient } from '@/utils/http/clients/coreBackend.client';
 import { authClient } from '@/utils/http/clients/authClient.client';
 import { authStore } from '@/store/authStore';
-import AuthContext from '@/context/auth-context';
+import AuthContext from '@/context/AuthContextType';
 
 /**
  * Profile component with robust fallbacks when backend/token are unavailable.
