@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 // import { mockUser, mockPosts } from '@/Db/userProfile';
 import ProfileHeader from './ProfileHeader';
 import StatsGrid from './StatsGrid';
@@ -33,17 +33,7 @@ const Profile: React.FC = () => {
   const [posts, setPosts] = useState<any[] | null>(null);
   const [isLoadingComments, setIsLoadingComments] = useState(true);
   const [Comments, setComments] = useState<any[] | null>(null);
-  const authCtx = React.useContext(AuthContext);
-
-  // Read cookie helper (string return or null)
-  function getCookie(name: string): string | null {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) {
-      return parts.pop()?.split(';').shift() || null;
-    }
-    return null;
-  }
+  const authCtx = useContext(AuthContext);
 
   // const buildMockComments = () =>
   //   mockPosts.map((p) => ({
@@ -223,7 +213,7 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     // Get token at the beginning
-    const token = getCookie('token');
+    const token = authCtx.getToken();
 
     if (!token) {
       console.error('No token found');

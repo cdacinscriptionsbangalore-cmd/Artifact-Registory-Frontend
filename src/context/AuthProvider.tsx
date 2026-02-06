@@ -18,6 +18,7 @@ const AuthState = (props: { children: React.ReactNode }) => {
 
     const value = {
         getToken,
+        setToken,
         clear,
         isAuthenticated: token !== null
     };

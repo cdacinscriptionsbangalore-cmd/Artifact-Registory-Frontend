@@ -1,9 +1,10 @@
 import { ThumbsUp } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import type { Comment } from "./InscriptionDetailPage";
 import type { User } from "@/types";
-import { getCookie } from "@/utils/auth";
 import { Tooltip } from "@mui/material";
+import { authClient } from "@/utils/http/clients/authClient.client";
+import AuthContext from "@/context/AuthContextType";
 
 const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
 
@@ -26,8 +27,9 @@ const CommentCard: React.FC<CommentCardProps> = ({ comments, currentUser }) => {
 
   // Like/Dislike API
   const LikeDisLikeAPI = async () => {
-    const token = getCookie('token');
-    const xsrfToken = getCookie('XSRF-TOKEN') || '50d7115f-8f84-4e07-a8ae-1a155afe4864';
+    const authCtx = useContext(AuthContext);
+    const token = authCtx.getToken;
+
 
     if (!token || !currentUser?._id) {
       console.error('No token or user');
@@ -37,7 +39,6 @@ const CommentCard: React.FC<CommentCardProps> = ({ comments, currentUser }) => {
     const myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
     myHeaders.append("Authorization", `Bearer ${token}`);
-    myHeaders.append("X-XSRF-TOKEN", xsrfToken);
 
     const urlencoded = new URLSearchParams();
     urlencoded.append("descriptionId", comments.id || "");
@@ -60,18 +61,17 @@ const CommentCard: React.FC<CommentCardProps> = ({ comments, currentUser }) => {
     setLikes(prevLikes => prevLikes + (newLikedState ? 1 : -1));
 
     try {
-      const response = await fetch(`${backendApiUrl}post/addVote`, requestOptions);
-
-      if (!response.ok) {
+      const response = await authClient.post(`${backendApiUrl}post/addVote`, requestOptions);
+      const { data } = await response;
+      if (!data.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const result = await response.json();
-      console.log('Vote result:', result);
+      console.log('Vote result:', data);
 
       // Optionally update with server response if it returns updated vote count
-      if (result.upvote !== undefined) {
-        setLikes(result.upvote);
+      if (data.upvote !== undefined) {
+        setLikes(data.upvote);
       }
     } catch (error) {
       // Revert UI on error
