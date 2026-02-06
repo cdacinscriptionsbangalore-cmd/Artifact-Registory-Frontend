@@ -34,7 +34,7 @@ export const refreshTokenInterceptor = () => {
         isRefreshing = true;
 
         try {
-          const res = await authClient.post("/auth/refresh");
+          const res = await authClient.post("/oauth2/authenticated/refresh-token");
 
           const newAccessToken = res.data.auth_token;
 

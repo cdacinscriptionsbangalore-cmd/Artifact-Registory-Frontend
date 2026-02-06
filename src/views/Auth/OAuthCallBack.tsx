@@ -13,7 +13,7 @@ const OAuthCallback = () => {
   useEffect(() => {
     const completeLogin = async () => {
       try {
-        const res = await authClient.post("/auth/refresh");
+        const res = await authClient.post("/oauth2/authenticated/refresh-token");
 
         authCtx.setToken(res.data.auth_token);
         authStore.setToken(res.data.auth_token);

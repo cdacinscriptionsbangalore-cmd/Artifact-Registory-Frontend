@@ -285,7 +285,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
   const bootstrapAuth = async () => {
     try {
-      const res = await authClient.post("/auth/refresh");
+      const res = await authClient.post("/oauth2/authenticated/refresh-token");
       const token = res.data.auth_token;
       authCtx.setToken(token);          // Context
       authStore.setToken(token); // Axios
