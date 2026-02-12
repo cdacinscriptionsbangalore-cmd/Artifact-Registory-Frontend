@@ -10,7 +10,7 @@ import AccountBoxOutlinedIcon from "@mui/icons-material/AccountBoxOutlined";
 import { clearUserActivityTracking, trackUserActivity } from "./EventManager";
 import { jwtDecode } from "jwt-decode";
 import CircularProgess from "../Spinner/CircularProgess";
-import AuthContext from "@/context/AuthContextType";
+import AuthContext from "@/context/AuthContext";
 
 interface NavItem {
     path: string;
@@ -25,11 +25,11 @@ interface NavProps {
 }
 
 const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
-    const [authenticated, setAuthenticated] = useState<boolean | null>(null);
     const [mobileNavbarOpen, setMobileNavbarOpen] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     const [scrollPosition, setScrollPosition] = useState(0);
     const authCtx = useContext(AuthContext);
+    const authenticated = authCtx?.isAuthenticated;
 
     const navigate = useNavigate();
 
@@ -63,8 +63,8 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
     const handleScroll = () => setScrollPosition(window.scrollY);
 
     const syncAuthState = () => {
-        const token = authCtx.getToken();
-        setAuthenticated(token !== null);
+        // legacy helper kept for compatibility; auth state is read from context
+        return;
     };
 
     const openMobileNavbarHandler = () => {
@@ -190,28 +190,24 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
 
                             {/* Auth buttons */}
                             <div className="flex justify-between items-center space-x-3" >
-                                {
-                                    authenticated ? (
-                                        <button
-                                            onClick={() => {
-                                                logout();
-                                                // setAuthenticated(false);
-                                                navigate("/login", { replace: true });
-                                            }}
-                                            className="flex items-center gap-2 bg-primary-dark text-white border-2 border-white cursor-pointer hover:bg-primary/80 pe-4 ps-3 py-2 rounded-lg font-medium transition-colors"
-                                        >
-                                            <LogOut /> Logout
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => navigate("/login", { replace: true })}
-                                            // className="flex items-center gap-2 bg-primary-light border-2 border-white px-4 py-2 rounded-lg"
-                                            className="flex items-center gap-2 bg-primary-light border-2 border-white cursor-pointer text-primary-text hover:bg-primary/80 pe-4 ps-3 py-2 rounded-lg font-medium transition-colors"
-
-                                        >
-                                            <LogIn /> Login
-                                        </button>
-                                    )}
+                                {authenticated ? (
+                                    <button
+                                        onClick={() => {
+                                            authCtx.logout();
+                                            navigate("/login", { replace: true });
+                                        }}
+                                        className="flex items-center gap-2 bg-primary-dark text-white border-2 border-white cursor-pointer hover:bg-primary/80 pe-4 ps-3 py-2 rounded-lg font-medium transition-colors"
+                                    >
+                                        <LogOut /> Logout
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => navigate("/login", { replace: true })}
+                                        className="flex items-center gap-2 bg-primary-light border-2 border-white cursor-pointer text-primary-text hover:bg-primary/80 pe-4 ps-3 py-2 rounded-lg font-medium transition-colors"
+                                    >
+                                        <LogIn /> Login
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

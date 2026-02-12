@@ -1,4 +1,3 @@
-import AuthContext from "@/context/AuthContextType";
 import { authStore } from "@/store/authStore";
 
 export const isAuthenticated = (): boolean => {
