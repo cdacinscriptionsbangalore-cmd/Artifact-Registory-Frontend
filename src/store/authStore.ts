@@ -8,6 +8,12 @@ export const authStore = {
   },
 
   setToken(token: string) {
+    console.log("Setting token in authStore:", token);
+    try {
+      // capture caller stack for debugging
+      const stack = new Error().stack;
+      console.log("authStore.setToken called from:\n", stack);
+    } catch {}
     accessToken = token;
   },
 

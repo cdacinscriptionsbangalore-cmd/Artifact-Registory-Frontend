@@ -11,13 +11,26 @@ const OAuthCallback = () => {
   useEffect(() => {
     const completeLogin = async () => {
       try {
+        console.log("OAuthCallback: calling refresh-token to complete OAuth flow");
         const res = await authClient.post("/oauth2/authenticated/refresh-token");
-        const { accessToken } = res.data.data;
-        console.log("Received access token in OAuthCallback:", accessToken);
-        loginSuccess(accessToken);
-        navigate("/feed");
+        console.log("OAuthCallback: refresh response:", res && res.data);
+
+        const accessToken = res?.data?.data?.accessToken || res?.data?.auth_token || res?.data?.token;
+        console.log("OAuthCallback: computed accessToken:", accessToken);
+        if (accessToken) {
+          loginSuccess(accessToken);
+          navigate("/feed");
+        } else {
+          console.warn("OAuthCallback: no access token found in response", res?.data);
+          logout();
+          navigate("/login");
+        }
       } catch (error) {
-        console.error("Error completing OAuth login:", error);
+        console.error("Error completing OAuth login:", {
+          message: (error as any)?.message,
+          response: (error as any)?.response?.data,
+          status: (error as any)?.response?.status,
+        });
         logout();
         navigate("/login");
       }

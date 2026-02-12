@@ -19,6 +19,12 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
   const loginSuccess = (token: string) => {
     authStore.setToken(token);
     console.log("Token received in AuthContext:", token);
+    if (typeof token === "undefined" || token === null) {
+      try {
+        const stack = new Error().stack;
+        console.warn("loginSuccess called with undefined token, stack:\n", stack);
+      } catch {}
+    }
     setIsAuthenticated(true);
   };
 
@@ -30,10 +36,25 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
   useEffect(() => {
     const bootstrap = async () => {
       try {
+        console.log("AuthContext.bootstrap: attempting refresh-token call");
         const res = await authClient.post("/oauth2/authenticated/refresh-token");
-        loginSuccess(res.data.auth_token);
-        console.log("useEffect in AuthContext: User is authenticated: ", res.data.auth_token);
+        console.log("AuthContext.bootstrap: refresh response:", res && res.data);
+
+        const token = res?.data?.auth_token || res?.data?.data?.accessToken || res?.data?.token;
+        console.log("AuthContext.bootstrap: computed token:", token);
+        if (token) {
+          loginSuccess(token);
+          console.log("useEffect in AuthContext: User is authenticated.");
+        } else {
+          console.warn("AuthContext.bootstrap: no token found in refresh response", res?.data);
+          logout();
+        }
       } catch (error) {
+        console.error("AuthContext.bootstrap: refresh failed:", {
+          message: (error as any)?.message,
+          response: (error as any)?.response?.data,
+          status: (error as any)?.response?.status,
+        });
         logout();
       } finally {
         setIsLoading(false);

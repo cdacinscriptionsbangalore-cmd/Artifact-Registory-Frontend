@@ -15,6 +15,14 @@ export const refreshTokenInterceptor = () => {
     async (error) => {
       const originalRequest = error.config;
 
+      console.error("refreshToken.interceptor caught response error:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        url: originalRequest?.url,
+        method: originalRequest?.method,
+      });
+
       if (
         error.response?.status === 401 &&
         !originalRequest._retry
@@ -34,17 +42,32 @@ export const refreshTokenInterceptor = () => {
         isRefreshing = true;
 
         try {
+          console.log("refreshToken.interceptor: attempting token refresh for request:", originalRequest?.url);
           const res = await authClient.post("/oauth2/authenticated/refresh-token");
+          console.log("refreshToken.interceptor: refresh response:", res && res.data);
 
-          const newAccessToken = res.data.auth_token;
+          const newAccessToken = res?.data?.auth_token || res?.data?.data?.accessToken || res?.data?.token;
+
+          console.log("refreshToken.interceptor: computed newAccessToken:", newAccessToken);
+
+          if (!newAccessToken) {
+            console.error("refreshToken.interceptor: no access token found in refresh response", res?.data);
+            throw new Error("No access token in refresh response");
+          }
 
           authStore.setToken(newAccessToken);
-          console.log("Token refreshed in refreshToken.interceptor:", newAccessToken);
+          console.log("Token refreshed in refreshToken.interceptor:", newAccessToken, "pendingQueueLength:", pendingQueue.length);
           processQueue(newAccessToken);
 
+          originalRequest.headers = originalRequest.headers || {};
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return authClient(originalRequest);
         } catch (refreshError) {
+          console.error("refreshToken.interceptor: refresh failed:", {
+            message: (refreshError as any)?.message,
+            response: (refreshError as any)?.response?.data,
+            status: (refreshError as any)?.response?.status,
+          });
           authStore.clear();
           window.location.href = "/login";
           return Promise.reject(refreshError);
