@@ -3,6 +3,7 @@ let accessToken: string | null = null;
 
 export const authStore = {
   getToken() {
+    console.log("Getting token in authStore:", accessToken);
     return accessToken;
   },
 

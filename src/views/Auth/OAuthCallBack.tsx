@@ -13,9 +13,11 @@ const OAuthCallback = () => {
       try {
         const res = await authClient.post("/oauth2/authenticated/refresh-token");
         const { accessToken } = res.data.data;
+        console.log("Received access token in OAuthCallback:", accessToken);
         loginSuccess(accessToken);
         navigate("/feed");
-      } catch {
+      } catch (error) {
+        console.error("Error completing OAuth login:", error);
         logout();
         navigate("/login");
       }

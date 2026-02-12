@@ -39,6 +39,7 @@ export const refreshTokenInterceptor = () => {
           const newAccessToken = res.data.auth_token;
 
           authStore.setToken(newAccessToken);
+          console.log("Token refreshed in refreshToken.interceptor:", newAccessToken);
           processQueue(newAccessToken);
 
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;

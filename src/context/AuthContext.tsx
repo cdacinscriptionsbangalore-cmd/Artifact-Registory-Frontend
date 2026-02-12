@@ -18,6 +18,7 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
 
   const loginSuccess = (token: string) => {
     authStore.setToken(token);
+    console.log("Token received in AuthContext:", token);
     setIsAuthenticated(true);
   };
 
@@ -31,7 +32,8 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
       try {
         const res = await authClient.post("/oauth2/authenticated/refresh-token");
         loginSuccess(res.data.auth_token);
-      } catch {
+        console.log("useEffect in AuthContext: User is authenticated: ", res.data.auth_token);
+      } catch (error) {
         logout();
       } finally {
         setIsLoading(false);
