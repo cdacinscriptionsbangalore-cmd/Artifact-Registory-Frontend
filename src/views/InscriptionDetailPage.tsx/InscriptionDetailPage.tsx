@@ -103,7 +103,7 @@ useEffect(() => {
     try {
       setLoading(true);
       const token = getCookie('token');
-      const response = await coreBackendClient.post('http://localhost:8080/post/getAllPost');
+      const response = await coreBackendClient.post('post/getAllPost');
 
       const { data } = response;
       const allPosts = Array.isArray(data.data) ? data.data : [];
@@ -144,7 +144,7 @@ useEffect(() => {
         redirect: "follow"
       };
 
-      const response = await coreBackendClient.post("http://localhost:8080/post/getPostDiscription", requestOptions)
+      const response = await coreBackendClient.post("post/getPostDiscription")
 
       const { data } = response;
       const fetchedComments = Array.isArray(data.data) ? data.data : [];
@@ -176,11 +176,11 @@ const submitRatingToAPI = async (postId: string, rating: number): Promise<string
     body: urlencoded,
     redirect: 'follow'
   };
-  const response = await coreBackendClient.post("http://localhost:8080/post/addRating", requestOptions);
+  const response = await coreBackendClient.post("post/addRating");
   if (!response.status || response.status !== 200) {
     throw new Error(`Error: ${response.statusText}`);
   }
-  const result = await response.text();
+  const result = await response.data.text();
   return result;
 };
 

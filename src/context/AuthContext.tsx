@@ -8,7 +8,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   isLoading: boolean;
   loginSuccess: (token: string) => void;
-  logout: () => boolean | Promise<boolean>;
+  logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType>(null!);

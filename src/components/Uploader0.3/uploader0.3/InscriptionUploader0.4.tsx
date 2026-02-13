@@ -15,11 +15,11 @@ import InscriptionForm from "../components/InscriptionForm";
 import { useInscriptionUploader } from "../hooks/UseInscriptionUploader";
 // import { checkStoneInscription } from "../Services/inscriptionService";
 import { useCamera } from "../hooks/UseCamera";
-import { getEnvConfig } from "../config/env";
+// import { getEnvConfig } from "../config/env";
 // declare module 'piexifjs';
 import piexifjs from "piexifjs";
 import { Alert, Slide, Snackbar, type SlideProps } from "@mui/material";
-import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
+// import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
 import { detectAIClient } from "@/utils/http/clients/detectAIClient";
 
 function SlideDownTransition(props: SlideProps) {

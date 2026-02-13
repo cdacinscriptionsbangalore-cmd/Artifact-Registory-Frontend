@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext } from "react";
 import type { ReactNode } from "react";
 import logo from "@assets/Frame1.png";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -6,9 +6,9 @@ import { Home, LogIn, LogOut, Menu, Upload, X } from "lucide-react";
 import meityLogo from "@assets/meitylogo2.png";
 import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
 import AccountBoxOutlinedIcon from "@mui/icons-material/AccountBoxOutlined";
-import { clearUserActivityTracking, trackUserActivity } from "./EventManager";
-import { jwtDecode } from "jwt-decode";
-import CircularProgess from "../Spinner/CircularProgess";
+// import { clearUserActivityTracking, trackUserActivity } from "./EventManager";
+// import { jwtDecode } from "jwt-decode";
+// import CircularProgess from "../Spinner/CircularProgess";
 import AuthContext from "@/context/AuthContext";
 
 interface NavItem {
@@ -20,7 +20,7 @@ interface NavItem {
 }
 
 interface NavProps {
-    scrollToSection: (position: number) => void;
+    scrollToSection: (position: number | undefined) => void;
 }
 
 const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
@@ -61,10 +61,10 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
 
     const handleScroll = () => setScrollPosition(window.scrollY);
 
-    const syncAuthState = () => {
-        // legacy helper kept for compatibility; auth state is read from context
-        return;
-    };
+    // const syncAuthState = () => {
+    //     // legacy helper kept for compatibility; auth state is read from context
+    //     return;
+    // };
 
     const openMobileNavbarHandler = () => {
         if (mobileNavbarOpen) {
@@ -78,7 +78,7 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
         }
     };
 
-    const handleNavClick = (position: number) => {
+    const handleNavClick = (position: number | undefined) => {
         setIsClosing(true);
         setTimeout(() => {
             setMobileNavbarOpen(false);
