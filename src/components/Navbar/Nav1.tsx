@@ -2,7 +2,6 @@ import React, { useState, useEffect, useContext } from "react";
 import type { ReactNode } from "react";
 import logo from "@assets/Frame1.png";
 import { NavLink, useNavigate } from "react-router-dom";
-import { logout } from "@/utils/auth";
 import { Home, LogIn, LogOut, Menu, Upload, X } from "lucide-react";
 import meityLogo from "@assets/meitylogo2.png";
 import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
@@ -193,10 +192,8 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
                                 {authenticated ? (
                                     <button
                                         onClick={() => {
-                                            const logoutSuccessful = authCtx.logout();
-                                            if (logoutSuccessful) {
-                                                navigate("/login", { replace: true });
-                                            }
+                                            authCtx.logout();
+                                            // navigate("/login", { replace: true });
                                         }}
                                         className="flex items-center gap-2 bg-primary-dark text-white border-2 border-white cursor-pointer hover:bg-primary/80 pe-4 ps-3 py-2 rounded-lg font-medium transition-colors"
                                     >

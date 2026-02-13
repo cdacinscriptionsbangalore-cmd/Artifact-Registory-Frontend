@@ -2,9 +2,7 @@
 import React, { createContext, useState, useEffect } from "react";
 import { authStore } from "@/store/authStore";
 import { authClient } from "@/utils/http/clients/authClient.client";
-import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
 import { apiClient } from "@/utils/http/clients/backendApiClientGeneral";
-import { useNavigate } from "react-router-dom";
 
 type AuthContextType = {
   isAuthenticated: boolean;
@@ -18,7 +16,6 @@ const AuthContext = createContext<AuthContextType>(null!);
 export const AuthProvider = (props: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
 
   const loginSuccess = (token: string) => {
     authStore.setToken(token);
@@ -40,6 +37,7 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
       console.log("Logout response:", res);
       if (res.status === 200) {
         console.log("Logout successful");
+        window.location.href = "/login";
         return true;
       }
     } catch (error) {
