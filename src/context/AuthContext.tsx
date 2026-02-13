@@ -15,7 +15,7 @@ const AuthContext = createContext<AuthContextType>(null!);
 
 export const AuthProvider = (props: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loginSuccess = (token: string) => {
     authStore.setToken(token);
@@ -52,6 +52,7 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const bootstrap = async () => {
+      setIsLoading(true);
       try {
         console.log("AuthContext.bootstrap: attempting refresh-token call");
         const res = await authClient.post("/oauth2/authenticated/refresh-token");
@@ -79,7 +80,8 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
     };
 
     bootstrap();
-  }, [isAuthenticated]);
+    // run only once on mount
+  }, []);
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, isLoading, loginSuccess, logout }}>

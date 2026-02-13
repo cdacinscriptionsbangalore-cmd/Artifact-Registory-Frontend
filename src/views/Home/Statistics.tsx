@@ -16,7 +16,7 @@ const Statistics: React.FC = () => {
     useEffect(() => {
         const fetchStatistics = async () => {
             try {
-                const response = await apiClient.get('http://localhost:8080/post/public/getDashboardCounts');
+                const response = await apiClient.get('post/public/getDashboardCounts');
                 const { data } = response;
                 if (data && data.data) {
                     const updatedStatistics = statistics.map(stat => {
