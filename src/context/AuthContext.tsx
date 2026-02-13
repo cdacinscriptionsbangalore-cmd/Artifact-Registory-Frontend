@@ -2,6 +2,9 @@
 import React, { createContext, useState, useEffect } from "react";
 import { authStore } from "@/store/authStore";
 import { authClient } from "@/utils/http/clients/authClient.client";
+import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
+import { apiClient } from "@/utils/http/clients/backendApiClientGeneral";
+import { useNavigate } from "react-router-dom";
 
 type AuthContextType = {
   isAuthenticated: boolean;
@@ -15,6 +18,7 @@ const AuthContext = createContext<AuthContextType>(null!);
 export const AuthProvider = (props: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const loginSuccess = (token: string) => {
     authStore.setToken(token);
@@ -23,14 +27,29 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
       try {
         const stack = new Error().stack;
         console.warn("loginSuccess called with undefined token, stack:\n", stack);
-      } catch {}
+      } catch { }
     }
     setIsAuthenticated(true);
   };
 
-  const logout = () => {
+  const logout = async () => {
     authStore.clear();
-    setIsAuthenticated(false);
+    try {
+      setIsAuthenticated(false);
+      const res = await apiClient.post("/oauth2/logout");
+      console.log("Logout response:", res);
+      if (res.status === 200) {
+        console.log("Logout successful");
+        navigate("/login", { replace: true });
+      }
+    } catch (error) {
+      console.error("Logout failed:", {
+        message: (error as any)?.message,
+        response: (error as any)?.response?.data,
+        status: (error as any)?.response?.status,
+      });
+    }
+
   };
 
   useEffect(() => {
