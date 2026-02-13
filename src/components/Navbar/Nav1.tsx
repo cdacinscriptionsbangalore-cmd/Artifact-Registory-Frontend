@@ -193,7 +193,10 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
                                 {authenticated ? (
                                     <button
                                         onClick={() => {
-                                            authCtx.logout();
+                                            const logoutSuccessful = authCtx.logout();
+                                            if (logoutSuccessful) {
+                                                navigate("/login", { replace: true });
+                                            }
                                         }}
                                         className="flex items-center gap-2 bg-primary-dark text-white border-2 border-white cursor-pointer hover:bg-primary/80 pe-4 ps-3 py-2 rounded-lg font-medium transition-colors"
                                     >

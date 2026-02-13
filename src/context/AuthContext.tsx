@@ -10,7 +10,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   isLoading: boolean;
   loginSuccess: (token: string) => void;
-  logout: () => void;
+  logout: () => boolean | Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType>(null!);
@@ -40,7 +40,7 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
       console.log("Logout response:", res);
       if (res.status === 200) {
         console.log("Logout successful");
-        navigate("/login", { replace: true });
+        return true;
       }
     } catch (error) {
       console.error("Logout failed:", {
@@ -48,8 +48,8 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
         response: (error as any)?.response?.data,
         status: (error as any)?.response?.status,
       });
+      return false;
     }
-
   };
 
   useEffect(() => {
