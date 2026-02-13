@@ -8,9 +8,6 @@ import Model from './Model';
 import ImageCarousel from './ImageCarousel';
 import { coreBackendClient } from '@/utils/http/clients/coreBackend.client';
 
-
-
-
 export interface Comment {
     id?: string;
     _id: string;

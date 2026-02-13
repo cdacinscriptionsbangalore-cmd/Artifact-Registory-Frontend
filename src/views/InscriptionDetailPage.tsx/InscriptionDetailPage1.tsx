@@ -86,26 +86,26 @@ const dummyPost: Post = {
         image: [placeholderImage1],
     },
     description: {
-        title: "Dummy Inscription Title",
-        description: "This is a dummy description for styling purposes.",
-        scriptLanguage: ["Dummy Script"],
-        language: ["Dummy Language"],
-        englishTranslation: "This is a dummy translation.",
+        title: "dummy Inscription Title",
+        description: "this is a dummy description for styling purposes.",
+        scriptLanguage: ["dummy Script", "another Script"],
+        language: ["dummy Language", "another Language"],
+        englishTranslation: "this is a dummy translation.",
         upvote: 0,
         geolocation: {
             lon: 0,
             lat: 0,
-            state: "Dummy State",
-            city: "Dummy City",
-            region: "Dummy Region",
+            state: "dummy State",
+            city: "dummy City",
+            region: "dummy Region",
         },
         createdAt: new Date(),
         updatedAt: new Date(),
     },
     userrating: [],
-    topic: "Dummy Topic",
-    script: ["Dummy Script"],
-    type: "Dummy Type",
+    topic: "dummy Topicsssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+    script: ["dummy Script", "another Script"],
+    type: "dummy Type111111111111111111111111111111111111111",
     rating: 3.3,
 };
 
@@ -883,24 +883,82 @@ const InscriptionDetailsPage: React.FC = () => {
 
                                         {/* Metadata */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 cursor-pointer">
                                                 <Languages className="w-4 h-4" />
-                                                <span>Script: {postToRender.description.scriptLanguage && postToRender.description.scriptLanguage}</span>
+                                                {postToRender.description.scriptLanguage && Array.isArray(postToRender.description.scriptLanguage) ? (
+                                                    (() => {
+                                                        const joined = postToRender.description.scriptLanguage.join(', ');
+                                                        return joined.length < 20 ? (
+                                                            <span>Script: {joined.charAt(0).toUpperCase() + joined.slice(1)}</span>
+                                                        ) : (
+                                                            <Tooltip title={joined.charAt(0).toUpperCase() + joined.slice(1)} placement="top">
+                                                                <span>Script: {joined.charAt(0).toUpperCase() + joined.slice(1, 17) + '...'}</span>
+                                                            </Tooltip>
+                                                        );
+                                                    })()
+                                                ) : (
+                                                    <span>Script: N/A</span>
+                                                )}
                                                 {/* <span>Script: {post.description.scriptLanguage && post.description.scriptLanguage}</span> */}
                                             </div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 cursor-pointer">
                                                 <BookOpen className="w-4 h-4" />
-                                                <span>Language: {postToRender.description.language && postToRender.description.language.join(', ')}</span>
+                                                {postToRender.description.language && Array.isArray(postToRender.description.language) ? (
+                                                    (() => {
+                                                        const joined = postToRender.description.language.join(', ');
+                                                        return joined.length < 20 ? (
+                                                            <span>Language: {joined.charAt(0).toUpperCase() + joined.slice(1)}</span>
+                                                        ) : (
+                                                            <Tooltip title={joined.charAt(0).toUpperCase() + joined.slice(1)} placement="top">
+                                                                <span>Language: {joined.charAt(0).toUpperCase() + joined.slice(1, 17) + '...'}</span>
+                                                            </Tooltip>
+                                                        );
+                                                    })()
+                                                ) : (
+                                                    <span>Language: N/A</span>
+                                                )}
                                                 {/* <span>Language: {post.description.language && post.description.language.join(', ')}</span> */}
                                             </div>
-                                            <div className="flex items-center gap-2 ">
-                                                <Calendar className="w-4 h-4" />
-                                                <span>Type: {postToRender.type && postToRender.type}</span>
+                                            <div className="flex items-center gap-2 cursor-pointer">
+                                                {/* <span>Type: {postToRender.type ? postToRender.type.length < 20 ? postToRender.type.charAt(0).toUpperCase() + postToRender.type.slice(1) : postToRender.type.charAt(0).toUpperCase() + postToRender.type.slice(1, 17) + "..." : "N/A"}</span> */}
                                                 {/* <span>Type: {post.type && post.type}</span> */}
+                                                <div className="flex items-center gap-2 cursor-pointer">
+                                                    <Calendar className="w-4 h-4" />
+                                                    {postToRender.type ? (
+                                                        postToRender.type.length < 20 ? (
+                                                            <span>
+                                                                Type: {postToRender.type.charAt(0).toUpperCase() + postToRender.type.slice(1)}
+                                                            </span>
+                                                        ) : (
+                                                            <Tooltip title={postToRender.type.charAt(0).toUpperCase() + postToRender.type.slice(1)} placement="bottom">
+                                                                <span>
+                                                                    Type: {postToRender.type.charAt(0).toUpperCase() + postToRender.type.slice(1, 17) + "..."}
+                                                                </span>
+                                                            </Tooltip>
+                                                        )
+                                                    ) : (
+                                                        <span>Type: N/A</span>
+                                                    )}
+                                                    {/* <span>Topic: {post.topic && post.topic}</span> */}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2 ">
+                                            <div className="flex items-center gap-2 cursor-pointer">
                                                 <MessageSquareWarning className="w-4 h-4" />
-                                                <span>Topic: {postToRender.topic && postToRender.topic}</span>
+                                                {postToRender.topic ? (
+                                                    postToRender.topic.length < 20 ? (
+                                                        <span>
+                                                            Topic: {postToRender.topic.charAt(0).toUpperCase() + postToRender.topic.slice(1)}
+                                                        </span>
+                                                    ) : (
+                                                        <Tooltip title={postToRender.topic.charAt(0).toUpperCase() + postToRender.topic.slice(1)} placement="bottom">
+                                                            <span>
+                                                                Topic: {postToRender.topic.charAt(0).toUpperCase() + postToRender.topic.slice(1, 17) + "..."}
+                                                            </span>
+                                                        </Tooltip>
+                                                    )
+                                                ) : (
+                                                    <span>Topic: N/A</span>
+                                                )}
                                                 {/* <span>Topic: {post.topic && post.topic}</span> */}
                                             </div>
                                         </div>
