@@ -52,13 +52,24 @@ const EnhancedInscriptionUploader: React.FC = () => {
       const formData = new FormData();
       formData.append("file", blob, "inscription.jpg");
 
-      const response = await detectAIClient.post('predict/', {
-        method: "POST",
-        body: formData,
-      });
+      // const response = await detectAIClient.post('predict/',formData);1
 
-      const { data } = response.data;
+      // const { data } = response.data;
+      interface DetectAIResponse {
+        result: string;
+        confidence: number;
+        internal_label: string;
+        filename: string;
+        detail?: string;
+      }
 
+      const { data } = await detectAIClient.post<DetectAIResponse>(
+        "predict/",
+        formData
+      );
+
+      console.log(data.result);
+      // console.log("AI Detection Response:", response);
       if (data?.detail?.toLowerCase().includes("suspicious content")) {
         setStoneCheckResult("Suspicious content detected");
         setError("Upload restricted: Suspicious content detected in file.");
@@ -102,16 +113,7 @@ const EnhancedInscriptionUploader: React.FC = () => {
 
   const { isCapturing, videoRef, canvasRef, startCamera, stopCamera, capturePhoto } = useCamera(handlePhotoCapture);
 
-  // const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const files = e.target.files;
-  //   const result = await fileUpload.handleFileUpload(files);
-  //   if (result) {
-  //     setPhotos(prev => [...prev, ...result.newPhotos]);
-  //     if (result.errorMessages.length > 0) {
-  //       setError(result.errorMessages.join(" "));
-  //     }
-  //   }
-  // };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -170,38 +172,6 @@ const EnhancedInscriptionUploader: React.FC = () => {
   >("info");
   const [snackbarMessage, setSnackbarMessage] = useState<string>("");
 
-  // useEffect(() => {
-  //   if (isCheckingStone) {
-  //     setSnackbarSeverity("info");
-  //     setSnackbarMessage("🔍 Checking inscription type...");
-  //     setSnackbarOpen(true);
-  //     return;
-  //   }
-  //   if (error) {
-  //     setSnackbarSeverity("error");
-  //     setSnackbarMessage(error);
-  //     setSnackbarOpen(true);
-  //   }
-
-  //   // if checking finished and there's a result, show it as success/warning
-  //   if (!isCheckingStone && stoneCheckResult) {
-  //     // choose severity based on content
-  //     const lower = stoneCheckResult.toLowerCase();
-  //     if (lower.includes("suspicious") || lower.includes("not")) {
-  //       setSnackbarSeverity("warning");
-  //     } else {
-  //       setSnackbarSeverity("success");
-  //     }
-  //     setSnackbarMessage(`📊 Detection Result: ${stoneCheckResult}`);
-  //     setSnackbarOpen(true);
-  //     return;
-  //   }
-
-  //   // If neither checking nor result => close
-  //   if (!isCheckingStone && !stoneCheckResult) {
-  //     setSnackbarOpen(false);
-  //   }
-  // }, [isCheckingStone, stoneCheckResult, error]);
   useEffect(() => {
     // If there is an explicit error, show it immediately (highest priority)
     if (error) {

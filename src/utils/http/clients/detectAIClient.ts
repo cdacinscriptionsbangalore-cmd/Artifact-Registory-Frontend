@@ -4,6 +4,8 @@ const backendApiUrl = window._env_?.VITE_BACKEND_AI_URL || import.meta.env.VITE_
 // FOR CALLING PUBLIC BACKEND APIS
 
 export const detectAIClient = createAxiosClient(
-    backendApiUrl, [],
+    backendApiUrl, 
+    [], 
+    500000,
     false
 )

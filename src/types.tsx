@@ -1,3 +1,12 @@
+declare global {
+  interface Window {
+    _env_?: {
+      VITE_BACKEND_AI_URL?: string;
+      [key: string]: string | undefined;
+    };
+  }
+}
+
 export interface GeoInfo {
   hasGPS: boolean;
   latitude?: string;
