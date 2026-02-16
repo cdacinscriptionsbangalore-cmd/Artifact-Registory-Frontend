@@ -10,12 +10,7 @@ interface ProtectedRouteProps {
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useContext(AuthContext);
 
-  if (isLoading)
-    return (
-      <div style={{ minHeight: '60vh' }} className="flex items-center justify-center">
-        <CircularProgress />
-      </div>
-    );
+  if (isLoading) return <CircularProgress />;
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -29,18 +24,13 @@ interface PublicRouteProps {
 }
 
 export const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useContext(AuthContext);
+  // const { isAuthenticated, isLoading } = useContext(AuthContext);
 
-  if (isLoading)
-    return (
-      <div style={{ minHeight: '60vh' }} className="flex items-center justify-center">
-        <CircularProgress />
-      </div>
-    );
+  // if (isLoading) return <CircularProgress />;
 
-  if (isAuthenticated) {
-    return <Navigate to="/home" replace />;
-  }
+  // if (isAuthenticated) {
+  //   return <Navigate to="/feed" replace />;
+  // }
 
   return <>{children}</>;
 };
