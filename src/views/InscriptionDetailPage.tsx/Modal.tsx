@@ -41,14 +41,14 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
       }
 
       // give parent the created object so it can update UI immediately
-      onDescriptionAdded?.(data ?? { description: inputValue, postId });
+      onDescriptionAdded?.(data ?? { discription: inputValue, postId });
 
       alert("Description uploaded successfully!");
       onClose(); // close modal after success
     } catch (error) {
-        console.error("Upload failed NOT ERROE:", error);
+        console.error("Upload failed NOT ERROR:", error);
       if (error instanceof Error) {
-        console.error("Upload failed:", error.message);
+        console.error("Upload failed:", error);
         alert("Upload failed: " + error.message);
       } else {
         console.error("Unknown error:", error);
