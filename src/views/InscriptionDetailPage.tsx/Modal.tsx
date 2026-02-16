@@ -54,7 +54,7 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
                 const created = respBody.data ?? respBody;
                 console.log("Description upload created object:", created);
                 onDescriptionAdded?.(created ?? { discription: inputValue, postId });
-                alert("Description uploaded successfully!");
+                onPostSuccess?.("Description uploaded successfully!");
                 onClose();
                 return;
             }
@@ -63,16 +63,16 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
             if (typeof respBody === 'object' && respBody !== null) {
                 console.log("API returned object body:", respBody);
                 onDescriptionAdded?.(respBody ?? { discription: inputValue, postId });
-                alert("Description uploaded successfully!");
+                onPostSuccess?.("Description uploaded successfully!");
                 onClose();
                 return;
             }
 
             // Fallback: unexpected response
-            console.warn("Unexpected response shape for addPoastDiscription:", respBody);
-            onDescriptionAdded?.({ discription: inputValue, postId });
-            alert("Description uploaded (fallback)");
-            onClose();
+                console.warn("Unexpected response shape for addPoastDiscription:", respBody);
+                onDescriptionAdded?.({ discription: inputValue, postId });
+                onPostSuccess?.("Description uploaded (fallback)");
+                onClose();
     } catch (error) {
             console.error("Upload failed NOT ERROR:", error);
             // Log richer error details from axios
@@ -87,10 +87,10 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
 
             if (error instanceof Error) {
                 console.error("Upload failed:", error);
-                alert("Upload failed: " + (error.message || 'unknown'));
+                onPostError?.(error.message || 'Upload failed');
             } else {
                 console.error("Unknown error:", error);
-                alert("An unknown error occurred.");
+                onPostError?.('An unknown error occurred.');
             }
     } finally {
       setInputValue("");
