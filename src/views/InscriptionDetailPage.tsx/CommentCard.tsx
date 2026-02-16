@@ -15,15 +15,17 @@ interface CommentCardProps {
 
 const CommentCard: React.FC<CommentCardProps> = ({ comments, currentUser }) => {
   const [isLiked, setIsLiked] = useState(false);
-  const [likes, setLikes] = useState(comments.upvote);
+  const [likes, setLikes] = useState<number>(comments.upvote ?? 0);
 
-  // Initialize isLiked based on userVote
+  // Initialize isLiked based on userVote (guard against undefined)
   useEffect(() => {
-    if (currentUser?._id) {
-      const liked = comments.userVote.includes(currentUser._id);
-      setIsLiked(liked);
-    }
-  }, [currentUser, comments.userVote]);
+    if (!currentUser?._id) return;
+    const userVote = Array.isArray(comments.userVote) ? comments.userVote : [];
+    const liked = userVote.includes(currentUser._id);
+    setIsLiked(liked);
+    // ensure likes state is synced with comment data
+    setLikes(comments.upvote ?? 0);
+  }, [currentUser, comments.userVote, comments.upvote]);
 
   // Like/Dislike API
   const LikeDisLikeAPI = async () => {
