@@ -11,7 +11,7 @@ const WellcomeLayout: React.FC = () => {
         {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto bg-primary-background scrollbar-hide">
           <div className="text-text-secondary">
-            <Suspense fallback={<CircularProgess />}>
+            <Suspense fallback={''}>
               <Outlet />
             </Suspense>
           </div>

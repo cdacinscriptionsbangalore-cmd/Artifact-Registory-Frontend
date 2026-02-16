@@ -33,7 +33,7 @@ const BaseLayout: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto bg-primary-background scrollbar-hide px-4 sm:px-6 lg:px-8 ">
         <div className="text-text-secondary py-8 sm:py-12">
-          <Suspense fallback={<CircularProgess />}>
+          <Suspense fallback={''}>
             <Outlet />
           </Suspense>
         </div>
