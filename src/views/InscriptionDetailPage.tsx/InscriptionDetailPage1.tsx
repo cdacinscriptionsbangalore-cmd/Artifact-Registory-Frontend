@@ -586,13 +586,16 @@ const InscriptionDetailsPage: React.FC = () => {
                         {/* {comments.map((comment: Comment) => (
                             <CommentCard key={comment.id ?? comment._id} comments={comment} currentUser={userDetails} />
                         ))} */}
-                        {comments.map((comment: Comment) => (
-                            <CommentCard
-                                key={comment.id ?? comment._id}
-                                comments={comment}
-                                currentUser={userDetails}
-                            />
-                        ))}
+                        {comments
+                            .slice()
+                            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                            .map((comment: Comment) => (
+                                <CommentCard
+                                    key={comment.id ?? comment._id}
+                                    comments={comment}
+                                    currentUser={userDetails}
+                                />
+                            ))}
 
                         <div className="text-sm text-center text-gray-500">No more comments</div>
                     </div>

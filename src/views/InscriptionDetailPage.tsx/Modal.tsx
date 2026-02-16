@@ -53,7 +53,21 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
 
                 const created = respBody.data ?? respBody;
                 console.log("Description upload created object:", created);
-                onDescriptionAdded?.(created ?? { discription: inputValue, postId });
+                // Normalize created object to expected shape before passing up
+                const cc: any = created ?? {};
+                const normalized = {
+                    _id: cc._id ?? cc.id ?? `local-${Date.now()}`,
+                    postId: cc.postId ?? cc.post_id ?? postId,
+                    userId: cc.userId ?? cc.user_id ?? cc.user_id_fk,
+                    username: cc.username ?? cc.user_name ?? cc.name ?? (cc.user && cc.user.name) ?? undefined,
+                    description: cc.description ?? cc.discription ?? cc.comment ?? inputValue,
+                    upvote: typeof cc.upvote === 'number' ? cc.upvote : (typeof cc.upvotes === 'number' ? cc.upvotes : 0),
+                    userVote: Array.isArray(cc.userVote) ? cc.userVote : (Array.isArray(cc.user_vote) ? cc.user_vote : []),
+                    createdAt: cc.createdAt ? new Date(cc.createdAt) : new Date(),
+                    updatedAt: cc.updatedAt ? new Date(cc.updatedAt) : new Date(),
+                };
+
+                onDescriptionAdded?.(normalized);
                 onPostSuccess?.("Description uploaded successfully!");
                 onClose();
                 return;
@@ -62,7 +76,19 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
             // If API returned the created object directly
             if (typeof respBody === 'object' && respBody !== null) {
                 console.log("API returned object body:", respBody);
-                onDescriptionAdded?.(respBody ?? { discription: inputValue, postId });
+                const cc2: any = respBody ?? {};
+                const normalized2 = {
+                    _id: cc2._id ?? cc2.id ?? `local-${Date.now()}`,
+                    postId: cc2.postId ?? cc2.post_id ?? postId,
+                    userId: cc2.userId ?? cc2.user_id ?? cc2.user_id_fk,
+                    username: cc2.username ?? cc2.user_name ?? cc2.name ?? (cc2.user && cc2.user.name) ?? undefined,
+                    description: cc2.description ?? cc2.discription ?? cc2.comment ?? inputValue,
+                    upvote: typeof cc2.upvote === 'number' ? cc2.upvote : (typeof cc2.upvotes === 'number' ? cc2.upvotes : 0),
+                    userVote: Array.isArray(cc2.userVote) ? cc2.userVote : (Array.isArray(cc2.user_vote) ? cc2.user_vote : []),
+                    createdAt: cc2.createdAt ? new Date(cc2.createdAt) : new Date(),
+                    updatedAt: cc2.updatedAt ? new Date(cc2.updatedAt) : new Date(),
+                };
+                onDescriptionAdded?.(normalized2);
                 onPostSuccess?.("Description uploaded successfully!");
                 onClose();
                 return;
@@ -70,7 +96,18 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
 
             // Fallback: unexpected response
                 console.warn("Unexpected response shape for addPoastDiscription:", respBody);
-                onDescriptionAdded?.({ discription: inputValue, postId });
+                const fallback = {
+                    _id: `local-${Date.now()}`,
+                    postId,
+                    userId: undefined,
+                    username: undefined,
+                    description: inputValue,
+                    upvote: 0,
+                    userVote: [],
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                };
+                onDescriptionAdded?.(fallback);
                 onPostSuccess?.("Description uploaded (fallback)");
                 onClose();
     } catch (error) {
