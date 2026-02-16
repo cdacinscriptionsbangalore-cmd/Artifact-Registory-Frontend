@@ -238,10 +238,24 @@ const InscriptionDetailsPage: React.FC = () => {
     }
 
     const handleDescriptionAdded = (createdComment: any) => {
-        // If backend returned a comment object, prepend it to comments so UI updates immediately
+        // If backend returned a comment object, normalize fields to our Comment shape and prepend
         if (createdComment && typeof createdComment === 'object') {
-            setComments(prev => [createdComment as Comment, ...prev]);
-            setDescription((createdComment as any).description || "");
+            const cc: any = createdComment;
+            const normalized: Comment = {
+                _id: cc._id ?? cc.id ?? `local-${Date.now()}`,
+                postId: cc.postId ?? cc.post_id ?? (postId as string),
+                userId: cc.userId ?? cc.user_id ?? cc.user_id_fk ?? userDetails?._id ?? 'unknown',
+                username: cc.username ?? cc.user_name ?? cc.name ?? userDetails?.name ?? 'You',
+                userImageUrl: cc.userImageUrl ?? cc.user_image_url ?? undefined,
+                createdAt: cc.createdAt ? new Date(cc.createdAt) : new Date(),
+                updatedAt: cc.updatedAt ? new Date(cc.updatedAt) : new Date(),
+                description: cc.description ?? cc.discription ?? cc.comment ?? '',
+                upvote: typeof cc.upvote === 'number' ? cc.upvote : (typeof cc.upvotes === 'number' ? cc.upvotes : 0),
+                userVote: Array.isArray(cc.userVote) ? cc.userVote : (Array.isArray(cc.user_vote) ? cc.user_vote : []),
+            };
+
+            setComments(prev => [normalized, ...prev]);
+            setDescription(normalized.description);
             return;
         }
 
