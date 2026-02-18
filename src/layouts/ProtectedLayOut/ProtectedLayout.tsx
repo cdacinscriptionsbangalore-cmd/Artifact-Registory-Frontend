@@ -30,8 +30,8 @@ export const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useContext(AuthContext);
 
   // While auth status is being determined, render the public content area (no spinner)
-  // if (isLoading) return <>{children}</>;
-  if (isLoading) return <></>;
+  // so users can sign in while the auth check completes.
+  if (isLoading) return <>{children}</>;
 
   // If user is already authenticated, redirect away from public pages like login
   if (isAuthenticated) {
