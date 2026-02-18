@@ -31,6 +31,7 @@ export const useDescriptionSuggestion = (geoInfo: any) => {
       let text = "";
       try {
         const json = await res.json();
+        console.log("Suggestion service response JSON:", json);
         text = json.suggestion || json.description || json.text || JSON.stringify(json);
       } catch {
         text = await res.text();
