@@ -27,10 +27,10 @@ export interface Post {
   script: string[];
   [key: string]: any;
 }
-const PAGE_SIZE = 3;
 
 // Main Discovery Feed Component
 const Feed = () => {
+  const PAGE_SIZE = 3;
   const [layout, setLayout] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [UserDetails, SetUserDetails] = useState<any | null>(null);
@@ -168,9 +168,9 @@ const Feed = () => {
 
         {/* Results Count */}
         <div className="mb-4">
-          <p className="text-gray-400 text-sm">
+          {searchTerm.length > 0 ? <p className="text-gray-400 text-sm">
             {filteredPosts.length} sites found {searchTerm && `for "${searchTerm}"`}
-          </p>
+          </p>:<div className='mb-4'>&nbsp;</div>}
         </div>
 
         {/* Posts Grid/List */}

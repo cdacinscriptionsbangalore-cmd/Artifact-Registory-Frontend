@@ -69,7 +69,11 @@ export const refreshTokenInterceptor = () => {
             status: (refreshError as any)?.response?.status,
           });
           authStore.clear();
-          window.location.href = "/login";
+          try {
+            window.dispatchEvent(new CustomEvent('app:unauthorized'));
+          } catch (e) {
+            window.location.href = "/login";
+          }
           return Promise.reject(refreshError);
         } finally {
           isRefreshing = false;

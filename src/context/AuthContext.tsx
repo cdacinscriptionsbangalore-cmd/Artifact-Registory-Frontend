@@ -83,6 +83,23 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
     // run only once on mount
   }, []);
 
+  // Listen for global unauthorized events emitted by axios interceptors
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      console.log("AuthContext: received app:unauthorized event, forcing logout");
+      try {
+        authStore.clear();
+      } catch {}
+      setIsAuthenticated(false);
+      setIsLoading(false);
+      // navigate to login (hard navigation ensures a clean state)
+      window.location.href = "/login";
+    };
+
+    window.addEventListener("app:unauthorized", handleUnauthorized as EventListener);
+    return () => window.removeEventListener("app:unauthorized", handleUnauthorized as EventListener);
+  }, []);
+
   return (
     <AuthContext.Provider value={{ isAuthenticated, isLoading, loginSuccess, logout }}>
       {props.children}
