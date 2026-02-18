@@ -2,7 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react-swc';
 import path from 'path';
 import { defineConfig } from 'vite';
-// import removeConsole from "vite-plugin-remove-console";
+import removeConsole from "vite-plugin-remove-console";
 
 export default defineConfig({
   base: '/',
@@ -29,9 +29,9 @@ export default defineConfig({
         ]
       ]
     }),
-    // removeConsole({
-    //   includes: ["log", "warn", "error", "debug"],
-    // }),
+    removeConsole({
+      includes: ["log", "warn", "error", "debug"],
+    }),
     tailwindcss(),
   ],
 
