@@ -5,7 +5,7 @@ type InterceptorFn = (client: AxiosInstance) => void;
 export function createAxiosClient(
   baseURL: string,
   interceptors: InterceptorFn[] = [],
-  timeout: number = 15000,
+  timeout: number = 50000,
   withCredentials: boolean = true
 ): AxiosInstance {
   const client = axios.create({
