@@ -167,10 +167,12 @@ const Feed = () => {
         />
 
         {/* Results Count */}
-        <div className="mb-4">
-          {searchTerm.length > 0 ? <p className="text-gray-400 text-sm">
+        <div>
+          {searchTerm.length > 0 ? <p className="text-gray-400 text-sm" style={{margin:"6px 0 14px 0"}}>
             {filteredPosts.length} sites found {searchTerm && `for "${searchTerm}"`}
-          </p>:<div className='mb-4'>&nbsp;</div>}
+          </p>
+          : <div className='mb-4'>&nbsp;</div>
+          }
         </div>
 
         {/* Posts Grid/List */}
