@@ -13,8 +13,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // While authentication check is in progress, render nothing for the protected
   // outlet area so surrounding layout (including Navbar) remains visible.
   // if (isLoading) return <Navigate to="/login" replace />;
-
-  if (isLoading)
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (isAuthenticated && isLoading)
     return (
       <div style={{ minHeight: "62vh" }}>
         <div className='flex flex items-center justify-center w-100% h-110 flex-col gap-4'>
@@ -26,10 +29,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         </div>
       </div>
     );
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
 
   return <>{children}</>;
 };
