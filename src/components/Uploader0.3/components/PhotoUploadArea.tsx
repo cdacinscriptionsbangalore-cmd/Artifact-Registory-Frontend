@@ -22,6 +22,12 @@ export const PhotoUploadArea = ({
       <p className="text-gray-500 text-center text-xs mt-2">
         Images with existing GPS data will be automatically detected
       </p>
+      <p className="text-red-500 text-center text-xs mt-2 text-bold">
+        File size must not exceed 75MB.
+      </p>
+      <p className="text-blue-500 text-center text-xs mt-2 text-bold">
+        Acceptable formats: .jpg, .jpeg, .png, .webp
+      </p>
     </div>
     <div className="flex h-14 gap-3">
       <button
