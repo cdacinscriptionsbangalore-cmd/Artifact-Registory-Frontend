@@ -36,7 +36,7 @@ export const PhotoUploadArea = ({
         className="flex-1 px-4 cursor-pointer py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition flex items-center justify-center gap-2"
       >
         <Upload size={16} />
-        Upload
+        Upload from Device
       </button>
     </div>
     <input

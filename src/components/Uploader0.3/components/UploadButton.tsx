@@ -22,7 +22,7 @@ export const UploadButton = ({ onClick, disabled, isUploading }: UploadButtonPro
       ) : (
         <>
           <Upload size={20} />
-          Upload
+          Submit Inscription
         </>
       )}
     </button>
