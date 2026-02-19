@@ -230,7 +230,7 @@ const EnhancedInscriptionUploader: React.FC = () => {
 
             {/* {error && <ErrorMessage message={error} />} */}
 
-            {hasGeoData !== null && <GPSStatus hasGeoData={hasGeoData} geoInfo={geoInfo} />}
+            {/* {hasGeoData !== null && <GPSStatus hasGeoData={hasGeoData} geoInfo={geoInfo} />} */}
 
             <div className="mb-6" >
               {isCapturing ? (
