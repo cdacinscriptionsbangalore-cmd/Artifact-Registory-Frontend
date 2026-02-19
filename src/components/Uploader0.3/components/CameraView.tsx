@@ -9,7 +9,7 @@ interface CameraViewProps {
 
 export const CameraView = ({ videoRef, canvasRef, onCapture, onCancel }: CameraViewProps) => (
   <div className="space-y-4">
-    <video ref={videoRef} className="w-full h-64 object-cover rounded-lg" autoPlay muted />
+    <video ref={videoRef} className="w-full h-102 object-cover rounded-lg" autoPlay muted />
     <canvas ref={canvasRef} className="hidden" />
     <div className="flex gap-3 justify-center">
       <button

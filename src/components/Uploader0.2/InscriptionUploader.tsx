@@ -348,7 +348,7 @@ const InscriptionUploader: React.FC = () => {
             <div className="space-y-4">
               <video
                 ref={videoRef}
-                className="w-full h-64 object-cover rounded-xl border-2 border-dashed border-gray-600"
+                className="w-full h-102 object-cover rounded-xl border-2 border-dashed border-gray-600"
                 autoPlay
                 muted
               />
