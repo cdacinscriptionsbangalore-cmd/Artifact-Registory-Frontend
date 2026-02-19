@@ -70,20 +70,20 @@ export const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
 
   // return <>{children}</>;
   // Wait until auth check finishes
-  if (!isAuthenticated && isLoading) {
-    return (
-      <div style={{ minHeight: "62vh" }}>
-        <div className='flex items-center justify-center h-110 flex-col gap-4'>
-          <img src={cdacRoundLogo} className="mr-3 mb-4 size-20 cdacSpinner" />
-          <div className="text-[#000000] text-lg">
-            Loading...
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // if (!isAuthenticated && isLoading) {
+  //   return (
+  //     <div style={{ minHeight: "62vh" }}>
+  //       <div className='flex items-center justify-center h-110 flex-col gap-4'>
+  //         <img src={cdacRoundLogo} className="mr-3 mb-4 size-20 cdacSpinner" />
+  //         <div className="text-[#000000] text-lg">
+  //           Loading...
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // };
 
-  if (!isAuthenticated && !isLoading)
+  if (!isAuthenticated)
     return <>{children}</>;
 
   if (isAuthenticated) {
