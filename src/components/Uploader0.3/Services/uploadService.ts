@@ -7,25 +7,26 @@ export const uploadInscription = async (
   geoInfo: GeoInfo | null
 ) => {
   try {
-    console.log("[UPLOAD] Starting inscription upload...");
+    console.log("[UPLOAD] Starting upload...");
     console.log("[UPLOAD] Total photos:", photos.length);
 
     const form = new FormData();
 
-    // Convert photo URLs → Blob and append to FormData
+    // Convert image URLs to blobs
     for (let i = 0; i < photos.length; i++) {
       console.log(`[UPLOAD] Processing photo ${i + 1}/${photos.length}`);
 
       const res = await fetch(photos[i]);
 
       if (!res.ok) {
-        throw new Error(`Failed to fetch photo at index ${i}`);
+        throw new Error(`Failed to fetch image at index ${i}`);
       }
 
       const blob = await res.blob();
       form.append("files", blob, `inscription_${i + 1}.jpg`);
     }
 
+    // Prepare post metadata
     const postData: PostSchema = {
       ...formData,
       description: {
@@ -37,7 +38,7 @@ export const uploadInscription = async (
       },
     };
 
-    // Attach metadata JSON as blob
+    // Attach JSON metadata as blob
     form.append(
       "post",
       new Blob([JSON.stringify(postData)], {
@@ -52,44 +53,29 @@ export const uploadInscription = async (
       form
     );
 
-    console.log("[UPLOAD] Raw response:", response);
+    const backend = response.data;
 
-    if (!response?.data) {
-      throw new Error("Empty response from server");
-    }
+    console.log("[UPLOAD] Backend response:", backend);
 
-    const { data } = response.data;
-    console.log("[UPLOAD] Parsed response data:", data);
-
-    // Case 1: Structured response with `ok`
-    if (typeof data === "object" && data !== null && "ok" in data) {
-      if (!data.ok) {
-        const errorMessage =
-          (data as any).error_message ||
-          "Backend returned failure without message";
-
-        console.error("[UPLOAD] Backend rejected upload:", {
-          status: response.status,
-          error: errorMessage,
-        });
-
-        throw new Error(
-          `${response.status || "HTTP?"} - ${errorMessage}`
-        );
+    // ✅ Success case
+    if (response.status >= 200 && response.status < 300) {
+      if (backend?.data === true) {
+        console.log("[UPLOAD] Upload successful:", backend.message);
+        return backend;
       }
 
-      console.log("[UPLOAD] Upload successful (structured response)");
-      return data;
+      // Unexpected success format
+      throw new Error(
+        backend?.message || "Unexpected success response format"
+      );
     }
 
-    // Case 2: Raw object response
-    if (typeof data === "object" && data !== null) {
-      console.log("[UPLOAD] Upload successful (raw object response)");
-      return data;
-    }
-
-    console.error("[UPLOAD] Unexpected response format:", data);
-    throw new Error("Unexpected server response format");
+    // Should rarely reach here because axios throws for 4xx/5xx
+    throw new Error(
+      backend?.error_message ||
+        backend?.message ||
+        "Upload failed"
+    );
 
   } catch (error: any) {
     console.error("[UPLOAD] Upload failed:", error);
@@ -99,17 +85,16 @@ export const uploadInscription = async (
       const backendError = error.response.data;
 
       const meaningfulMessage =
-        backendError.error_message ||   // your backend field
-        backendError.message ||         // fallback common field
-        "Request failed";
+        backendError.error_message ||
+        backendError.message ||
+        `Request failed with status ${error.response.status}`;
 
       throw new Error(meaningfulMessage);
     }
 
-    // Network or unknown error
+    // Network or unexpected error
     throw new Error(
       error?.message || "Unexpected server error. Please try again later."
     );
   }
-
 };
