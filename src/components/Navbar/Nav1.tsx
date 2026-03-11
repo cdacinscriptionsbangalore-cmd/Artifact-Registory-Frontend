@@ -23,6 +23,36 @@ interface NavProps {
     scrollToSection: (position: number | undefined) => void;
 }
 
+const languages = [
+  { label: "English", native: "English", id: "en", aicode: "en" },
+
+  { label: "Hindi", native: "हिन्दी", id: "641d1d6592a6a31751ff1f49", aicode: "hi" },
+  { label: "Assamese", native: "অসমীয়া", id: "641d1cc98ecee6735a1b371e", aicode: "as" },
+  { label: "Bengali", native: "বাংলা", id: "641d1d818ecee6735a1b37c7", aicode: "bn" },
+  { label: "Bodo", native: "बड़ो", id: "641d1c738ecee6735a1b36d6", aicode: "brx" },
+
+  { label: "Dogri", native: "डोगरी", id: "641d1db68ecee6735a1b37ee", aicode: "hi" }, // mapped to hi
+
+  { label: "Gujarati", native: "ગુજરાતી", id: "641d1cae8ecee6735a1b370d", aicode: "gu" },
+  { label: "Kannada", native: "ಕನ್ನಡ", id: "641d1c788ecee6735a1b36db", aicode: "kn" },
+  { label: "Kashmiri", native: "कॉशुर", id: "641d1d258ecee6735a1b377a", aicode: "ks" },
+  { label: "Konkani", native: "कोंकणी", id: "641d1da192a6a31751ff1f7e", aicode: "gom" },
+  { label: "Maithili", native: "मैथिली", id: "641d1d6f8ecee6735a1b37b7", aicode: "mai" },
+  { label: "Malayalam", native: "മലയാളം", id: "641d1c6c8ecee6735a1b36d1", aicode: "ml" },
+  { label: "Manipuri", native: "মৈতৈলোন", id: "641d1db892a6a31751ff1f97", aicode: "mni" },
+  { label: "Marathi", native: "मराठी", id: "641d1d7c8ecee6735a1b37c3", aicode: "mr" },
+  { label: "Nepali", native: "नेपाली", id: "641d1cf58ecee6735a1b3749", aicode: "ne" },
+  { label: "Odia", native: "ଓଡ଼ିଆ", id: "641d1dd98ecee6735a1b380c", aicode: "or" },
+  { label: "Punjabi", native: "ਪੰਜਾਬੀ", id: "641d1c6c8ecee6735a1b36d2", aicode: "pa" },
+  { label: "Sanskrit", native: "संस्कृतम्", id: "641d1cc98ecee6735a1b371d", aicode: "sa" },
+  { label: "Santali", native: "ᱥᱟᱱᱛᱟᱲᱤ", id: "641d1c9192a6a31751ff1e9e", aicode: "si" },
+  { label: "Sindhi", native: "سنڌي", id: "641d1d3092a6a31751ff1f1f", aicode: "sd" },
+  { label: "Tamil", native: "தமிழ்", id: "641d1caa92a6a31751ff1eb6", aicode: "ta" },
+  { label: "Telugu", native: "తెలుగు", id: "641d1cab8ecee6735a1b370b", aicode: "te" },
+  { label: "Urdu", native: "اردو", id: "641d1c778ecee6735a1b36da", aicode: "ur" },
+];
+
+
 const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
     const [mobileNavbarOpen, setMobileNavbarOpen] = useState(false);
     const [isClosing, setIsClosing] = useState(false);

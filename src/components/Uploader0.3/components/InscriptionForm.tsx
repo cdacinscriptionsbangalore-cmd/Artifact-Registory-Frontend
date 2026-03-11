@@ -32,12 +32,19 @@ const InscriptionForm: React.FC<InscriptionFormProps> = ({
   useEffect(() => {
     setPostedAnonymously(!!formData.description.postedAnonymously);
   }, [formData.description.postedAnonymously]);
+
+  useEffect(() => {
+    if (typeof formData.description.postedAnonymously === "undefined") {
+      onChange("description.postedAnonymously", false);
+    }
+  }, [formData.description.postedAnonymously, onChange]);
   // Allow unicode letters and numbers, spaces and these punctuation: () , : " . ; -
   const allowedRegex = /^[a-zA-Z0-9\s]+$/
     ;
 
   const validateFieldValue = (value: string) => {
     const v = (value || "").trim();
+    if (v.length === 0) return "This field is required.";
     if (v.length < 3) return "Minimum 3 characters required.";
     if (v.length > 100) return "Maximum 100 characters allowed.";
     if (!allowedRegex.test(v)) return 'Special characters are prohibited: () , : " . ; -';
@@ -70,6 +77,7 @@ const InscriptionForm: React.FC<InscriptionFormProps> = ({
           onChange={(value) => { onChange("description.title", value); clearErrorIfValid('title', value); }}
           placeholder="Stone Inscription Title"
           widthFull={true}
+          required={true}
           error={!!errors['title']}
           helperText={errors['title']}
           onBlur={() => handleFieldBlur('title', formData.description.title || "")}
@@ -80,6 +88,7 @@ const InscriptionForm: React.FC<InscriptionFormProps> = ({
           onChange={(value) => { onChange("description.subject", value); clearErrorIfValid('subject', value); }}
           placeholder="Ancient History"
           widthFull={true}
+          required={true}
           error={!!errors['subject']}
           helperText={errors['subject']}
           onBlur={() => handleFieldBlur('subject', formData.description.subject || "")}
@@ -93,6 +102,7 @@ const InscriptionForm: React.FC<InscriptionFormProps> = ({
           onChange={(value) => { onChange("topic", value); clearErrorIfValid('topic', value); }}
           placeholder="Temple Inscriptions"
           widthFull={true}
+          required={true}
           error={!!errors['topic']}
           helperText={errors['topic']}
           onBlur={() => handleFieldBlur('topic', formData.topic || "")}
@@ -112,6 +122,7 @@ const InscriptionForm: React.FC<InscriptionFormProps> = ({
           label="Manuscript Material"
           // defaultValue="Choose manuscript material"
           onChange={(value) => onChange("type", value)}
+          required
           size="small"
           fullWidth
         >
@@ -131,6 +142,7 @@ const InscriptionForm: React.FC<InscriptionFormProps> = ({
           onChange={(value) => { onChange("script", value.split(",").map(s => s.trim()).filter(Boolean)); clearErrorIfValid('script', value); }}
           placeholder="Grantha, Brahmi"
           widthFull={true}
+          required={true}
           error={!!errors['script']}
           helperText={errors['script']}
           onBlur={() => handleFieldBlur('script', formData.script?.join(", ") || "")}
@@ -142,6 +154,7 @@ const InscriptionForm: React.FC<InscriptionFormProps> = ({
           onChange={(value) => { onChange("description.language", value.split(",").map(s => s.trim()).filter(Boolean)); clearErrorIfValid('language', value); }}
           placeholder="Sanskrit, Prakrit"
           widthFull={true}
+          required={true}
           error={!!errors['language']}
           helperText={errors['language']}
           onBlur={() => handleFieldBlur('language', formData.description.language?.join(", ") || "")}
@@ -165,6 +178,7 @@ const InscriptionForm: React.FC<InscriptionFormProps> = ({
           value={formData.description.description || ""}
           onChange={(e) => { onChange("description.description", e.target.value); clearErrorIfValid('description', e.target.value); }}
           onBlur={() => handleFieldBlur('description', formData.description.description || "")}
+          required
           error={!!errors['description']}
           helperText={errors['description']}
           multiline

@@ -5,7 +5,7 @@ import StarRating from "./StarRating";
 import { Heart, MapPin, Star } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import type { Post } from "./Feed";
-import { CircularProgress } from "@mui/material";
+import { Badge, CircularProgress } from "@mui/material";
 
 interface DiscoveryCardProps {
   post: Post;
@@ -18,12 +18,24 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
 
   const city = post?.description?.geolocation?.city ?? "Unknown";
   const state = post?.description?.geolocation?.state ?? "Unknown";
+  const visibilityRaw = (post as any)?.visibility ?? (post as any)?.visiblity;
+  const postedAnonymously = (post as any)?.description?.postedAnonymously;
+  const isPostVisible =
+    typeof visibilityRaw === "boolean"
+      ? visibilityRaw
+      : typeof postedAnonymously === "boolean"
+        ? !postedAnonymously
+        : true;
+  const resolvedAuthorName = (post as any)?.username ?? (post as any)?.user_name;
+  const authorName = isPostVisible ? (resolvedAuthorName || "Anonymous") : "Anonymous";
 
   // console.log(post);
   if (layout === "list") {
     return (
       <div className="bg-secondary-background rounded-lg overflow-hidden hover:bg-gray-750 transition-colors">
-        <div className="flex " >
+        <div className="flex" >
+
+
           <div className="w-32 h-24 sm:w-48 sm:h-32 flex-shrink-0 relative">
             <img
               src={post.images.image[0]}
@@ -36,6 +48,7 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
           </div>
 
           <div className="flex-1 p-4 min-w-0">
+
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1 min-w-0">
                 <h3 className="text-white font-semibold text-lg mb-1 truncate">{post.description.title}</h3>
@@ -69,7 +82,11 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
                 </div>
               }
 
-              <NavLink to={post._id} className="text-orange-500 hover:text-orange-400 text-sm font-medium cursor-pointer">
+              <NavLink
+                to={post._id}
+                state={{ authorName }}
+                className="text-orange-500 hover:text-orange-400 text-sm font-medium cursor-pointer"
+              >
                 View details
               </NavLink>
             </div>
@@ -81,7 +98,9 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
 
   return (
     <div className="card-styling bg-primary-text rounded-lg overflow-hidden hover:transform hover:scale-105 transition-all duration-300">
+
       <div className="relative">
+        <Badge color="error" badgeContent={`${post?.images.image.length < 10 ? post?.images.image.length || 0 : `9+`}`+`${post.images.image.length === 1? " Image":" Images"}`} className="p-2" style={{width:"100%",position:"absolute", right:"10%",top:"8%"}} />
         {!loading ? <img
           src={post.images.image[0]}
           alt={post.description.title}
@@ -98,7 +117,7 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
             (<div className="bg-primary-background bg-opacity-80 rounded-lg p-3 flex items-center justify-between m-3 ">
               <div className="flex flex-col">
                 <span className="text-white font-semibold text-lg " >{post.description.title ? post.description.title : "Untitled"}</span>
-                <span className="text-white font-semibold text-xs " >Posted by: {post.visibility ? post.username : "Anonymous"}</span>
+                <span className="text-white font-semibold text-xs capitalize" >Posted by: {authorName}</span>
               </div>
               <div className="flex items-center gap-2">
                 {post.rating > 0 ? (
@@ -141,7 +160,11 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
             </span>
           </button> */}
 
-          <NavLink to={post._id} className=" text-orange-500 hover:text-orange-400 text-sm font-medium cursor-pointer">
+          <NavLink
+            to={post._id}
+            state={{ authorName }}
+            className=" text-orange-500 hover:text-orange-400 text-sm font-medium cursor-pointer"
+          >
             View details
           </NavLink>
         </div>

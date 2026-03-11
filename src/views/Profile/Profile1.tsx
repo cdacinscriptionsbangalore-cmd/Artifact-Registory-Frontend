@@ -3,7 +3,7 @@ import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
 import { useContext, useEffect, useState } from "react";
 import ProfileLoader from "./ProfileLoader";
 import ProfileUI from "./ProfileUI";
-import { mockUser } from "@/Db/userProfile";
+import { mockUser, mockPosts, mockComments } from "@/Db/userProfile";
 
 const USE_FALLBACK = false;
 
@@ -67,8 +67,8 @@ const Profile: React.FC = () => {
   return (
     <ProfileUI
       user={USE_FALLBACK ? mockUser : userDetails}
-      posts={posts}
-      comments={comments}
+      posts={USE_FALLBACK ? mockPosts : posts}
+      comments={USE_FALLBACK ? mockComments : comments}
     />
   );
 };

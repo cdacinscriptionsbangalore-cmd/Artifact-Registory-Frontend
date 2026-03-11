@@ -31,6 +31,7 @@ export interface DescriptionSchema {
   description?: string;
   scriptLanguage?: string[];
   language?: string[];
+  postedAnonymously?: boolean;
   geoLocation?: string; // Optional: added for geo info
 }
 
@@ -39,5 +40,6 @@ export interface PostSchema {
   topic?: string;
   script?: string[];
   type?: string;
+  visiblity?: boolean;
 }
   

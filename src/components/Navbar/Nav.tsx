@@ -8,6 +8,7 @@ import { type NavProps } from "./types";
 import { useContext } from "react";
 import AuthContext from "@/context/AuthContext";
 import { NavLink } from "react-router-dom";
+import Nav2 from "./Nav2.tsx";
 
 const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
   const {
@@ -29,6 +30,7 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
 
   return (
     <div className="navbar-gradient">
+      <Nav2/>
       <DesktopHeader />
       <hr className="border-t border-gray-300" />
       <nav className={`top-0 z-50 text-secondary-text navbar-shadow ${scrollPosition > 200 ? "navscrollbehavior w-100C" : "w-100C"}`}>

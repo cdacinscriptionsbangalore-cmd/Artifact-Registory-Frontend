@@ -10,13 +10,13 @@ const mockDiscoveryPosts = {
             "createdAt": "2025-11-10T06:33:55.615+00:00",
             "updatedAt": "2025-11-13T06:49:44.251+00:00",
             "images": {
-                "thumbnailImage": "https://inscriptions.cdacb.in/api/post/public/images/69118753d23e86bbb9cb8ce8",
+                "thumbnailImage": "https://upload.wikimedia.org/wikipedia/en/e/ed/Umachal_Rock_Inscription.png",
                 "image": [
-                    "https://inscriptions.cdacb.in/api/post/public/images/69118753d23e86bbb9cb8ce8"
+                    "https://upload.wikimedia.org/wikipedia/en/e/ed/Umachal_Rock_Inscription.png"
                 ]
             },
             "description": {
-                "title": null,
+                "title": "Rock inscription 1",
                 "subject": null,
                 "description": null,
                 "scriptLanguage": null,
@@ -53,13 +53,13 @@ const mockDiscoveryPosts = {
             "createdAt": "2025-11-10T06:52:19.819+00:00",
             "updatedAt": "2025-11-11T05:29:16.637+00:00",
             "images": {
-                "thumbnailImage": "https://inscriptions.cdacb.in/api/post/public/images/69118ba3d23e86bbb9cb8cea",
+                "thumbnailImage": "https://www.worldhistory.org/uploads/images/19292.png?v=1722463500-1722941054",
                 "image": [
-                    "https://inscriptions.cdacb.in/api/post/public/images/69118ba3d23e86bbb9cb8cea"
+                    "https://www.worldhistory.org/uploads/images/19292.png?v=1722463500-1722941054"
                 ]
             },
             "description": {
-                "title": "Rock Inscription asdasdasf",
+                "title": "Rock Inscription 31",
                 "subject": null,
                 "description": "test",
                 "scriptLanguage": null,
@@ -93,9 +93,9 @@ const mockDiscoveryPosts = {
             "createdAt": "2025-11-11T09:43:43.041+00:00",
             "updatedAt": "2025-11-11T09:43:46.201+00:00",
             "images": {
-                "thumbnailImage": "https://inscriptions.cdacb.in/api/post/public/images/6913054f05959ad242fe9752",
+                "thumbnailImage": "https://www.shutterstock.com/shutterstock/photos/1927668710/display_1500/stock-photo-inscriptions-of-tamil-language-carved-on-the-stone-walls-at-brihadeeswarar-temple-in-thanjavur-1927668710.jpg",
                 "image": [
-                    "https://inscriptions.cdacb.in/api/post/public/images/6913054f05959ad242fe9752",
+                    "https://www.shutterstock.com/shutterstock/photos/1927668710/display_1500/stock-photo-inscriptions-of-tamil-language-carved-on-the-stone-walls-at-brihadeeswarar-temple-in-thanjavur-1927668710.jpg",
                     "https://inscriptions.cdacb.in/api/post/public/images/6913055005959ad242fe9753",
                     "https://inscriptions.cdacb.in/api/post/public/images/6913055005959ad242fe9754"
                 ]
@@ -127,9 +127,9 @@ const mockDiscoveryPosts = {
             "createdAt": "2025-11-11T10:22:05.028+00:00",
             "updatedAt": "2025-11-11T10:22:05.458+00:00",
             "images": {
-                "thumbnailImage": "https://inscriptions.cdacb.in/api/post/public/images/69130e4d05959ad242fe9757",
+                "thumbnailImage": "https://c7.alamy.com/comp/PKHCTG/rock-inscriptions-leh-ladakh-jammu-kashmir-india-asia-PKHCTG.jpg",
                 "image": [
-                    "https://inscriptions.cdacb.in/api/post/public/images/69130e4d05959ad242fe9757"
+                    "https://c7.alamy.com/comp/PKHCTG/rock-inscriptions-leh-ladakh-jammu-kashmir-india-asia-PKHCTG.jpg"
                 ]
             },
             "description": {
@@ -161,13 +161,13 @@ const mockDiscoveryPosts = {
             "createdAt": "2025-11-11T10:24:58.077+00:00",
             "updatedAt": "2025-11-11T10:24:59.041+00:00",
             "images": {
-                "thumbnailImage": "https://inscriptions.cdacb.in/api/post/public/images/69130efa05959ad242fe9759",
+                "thumbnailImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTsR6TqN0wXAwyh3V1gTduxeQixmVoxlLn4BQ&s",
                 "image": [
-                    "https://inscriptions.cdacb.in/api/post/public/images/69130efa05959ad242fe9759"
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTsR6TqN0wXAwyh3V1gTduxeQixmVoxlLn4BQ&s"
                 ]
             },
             "description": {
-                "title": null,
+                "title": "Chola inscription",
                 "subject": null,
                 "description": "Dooravaninagar and Ramamurthy Nagar are well-known localities situated within the Bengaluru East City Corporation administrative zone in the eastern part of Bengaluru (Bangalore), Karnataka, India. These areas fall under the Bengaluru Urban district and are identified by the postal code 560016, indicating their specific geographical location within the city's extensive network.",
                 "scriptLanguage": null,
@@ -191,13 +191,13 @@ const mockDiscoveryPosts = {
             "createdAt": "2025-11-11T11:32:59.174+00:00",
             "updatedAt": "2025-11-11T11:32:59.502+00:00",
             "images": {
-                "thumbnailImage": "https://inscriptions.cdacb.in/api/post/public/images/69131eeb05959ad242fe975f",
+                "thumbnailImage": "https://whc.unesco.org/uploads/thumbs/site_1222_0002-500--20110920204336.jpg",
                 "image": [
-                    "https://inscriptions.cdacb.in/api/post/public/images/69131eeb05959ad242fe975f"
+                    "https://whc.unesco.org/uploads/thumbs/site_1222_0002-500--20110920204336.jpg"
                 ]
             },
             "description": {
-                "title": null,
+                "title": "Persian",
                 "subject": null,
                 "description": null,
                 "scriptLanguage": null,
@@ -255,13 +255,15 @@ const mockDiscoveryPosts = {
             "createdAt": "2025-11-11T11:43:27.281+00:00",
             "updatedAt": "2025-11-11T11:43:27.467+00:00",
             "images": {
-                "thumbnailImage": "https://inscriptions.cdacb.in/api/post/public/images/6913215f05959ad242fe9763",
+                "thumbnailImage": "https://media.istockphoto.com/id/1086350072/photo/old-inscription-on-a-ancient-temple.jpg?s=1024x1024&w=is&k=20&c=E-JUcPT667yZs2sj5RuOlEP47BtyeovCPcL9_Nf85Fw=",
                 "image": [
-                    "https://inscriptions.cdacb.in/api/post/public/images/6913215f05959ad242fe9763"
+                    "https://media.istockphoto.com/id/1086350072/photo/old-inscription-on-a-ancient-temple.jpg?s=1024x1024&w=is&k=20&c=E-JUcPT667yZs2sj5RuOlEP47BtyeovCPcL9_Nf85Fw=",
+                    "https://c7.alamy.com/comp/FFYG90/carved-inscriptions-on-side-wall-of-hajara-rama-temple-depicting-hampi-FFYG90.jpg",
+                    "http://digitalhampi.in/gkdemo/Data/Images/VirupakshaInscription1.jpg"
                 ]
             },
             "description": {
-                "title": null,
+                "title": "Hampi inscription",
                 "subject": null,
                 "description": null,
                 "scriptLanguage": null,
@@ -319,13 +321,13 @@ const mockDiscoveryPosts = {
             "createdAt": "2025-11-11T11:44:26.365+00:00",
             "updatedAt": "2025-11-11T11:44:27.012+00:00",
             "images": {
-                "thumbnailImage": "https://inscriptions.cdacb.in/api/post/public/images/6913219a05959ad242fe9765",
+                "thumbnailImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Inscription_of_Hammurabi_King_of_Babylon.jpg/1280px-Inscription_of_Hammurabi_King_of_Babylon.jpg?20190403112554",
                 "image": [
-                    "https://inscriptions.cdacb.in/api/post/public/images/6913219a05959ad242fe9765"
+                    "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Inscription_of_Hammurabi_King_of_Babylon.jpg/1280px-Inscription_of_Hammurabi_King_of_Babylon.jpg?20190403112554"
                 ]
             },
             "description": {
-                "title": null,
+                "title": "Babylon inscription",
                 "subject": null,
                 "description": null,
                 "scriptLanguage": null,
@@ -383,9 +385,9 @@ const mockDiscoveryPosts = {
             "createdAt": "2025-11-12T12:46:59.980+00:00",
             "updatedAt": "2025-11-13T06:52:04.478+00:00",
             "images": {
-                "thumbnailImage": "https://inscriptions.cdacb.in/api/post/public/images/691481c41320a08c6c576ca5",
+                "thumbnailImage": "https://s7g10.scene7.com/is/image/rcu/rock-art-inscriptions-blog-full-03?$Responsive$&fit=stretch&fmt=webp&wid=1920",
                 "image": [
-                    "https://inscriptions.cdacb.in/api/post/public/images/691481c41320a08c6c576ca5"
+                    "https://s7g10.scene7.com/is/image/rcu/rock-art-inscriptions-blog-full-03?$Responsive$&fit=stretch&fmt=webp&wid=1920"
                 ]
             },
             "description": {
@@ -452,13 +454,13 @@ const mockDiscoveryPosts = {
             "createdAt": "2025-11-13T06:22:34.197+00:00",
             "updatedAt": "2025-11-17T06:32:47.730+00:00",
             "images": {
-                "thumbnailImage": "https://inscriptions.cdacb.in/api/post/public/images/6915792a1320a08c6c576ca9",
+                "thumbnailImage": "https://mapacademy.io/wp-content/uploads/2022/09/ashoka-edicts-2m.jpg",
                 "image": [
-                    "https://inscriptions.cdacb.in/api/post/public/images/6915792a1320a08c6c576ca9"
+                    "https://mapacademy.io/wp-content/uploads/2022/09/ashoka-edicts-2m.jpg"
                 ]
             },
             "description": {
-                "title": null,
+                "title": "Mauryan inscription",
                 "subject": null,
                 "description": null,
                 "scriptLanguage": null,

@@ -29,6 +29,7 @@ export const uploadInscription = async (
     // Prepare post metadata
     const postData: PostSchema = {
       ...formData,
+      visiblity: !(formData.description.postedAnonymously ?? false),
       description: {
         ...formData.description,
         geoLocation:

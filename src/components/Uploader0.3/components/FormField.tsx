@@ -6,12 +6,23 @@ interface FormFieldProps {
   onChange: (value: string) => void;
   placeholder: string;
   widthFull: boolean;
+  required?: boolean;
   error?: boolean;
   helperText?: string;
   onBlur?: () => void;
 }
 
-const FormField: React.FC<FormFieldProps> = ({ label, value, onChange, placeholder, widthFull, error, helperText, onBlur }) => {
+const FormField: React.FC<FormFieldProps> = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  widthFull,
+  required = false,
+  error,
+  helperText,
+  onBlur,
+}) => {
   return (
     <div style={{ width: `100%` }}>
       <TextField
@@ -23,6 +34,7 @@ const FormField: React.FC<FormFieldProps> = ({ label, value, onChange, placehold
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
         placeholder={placeholder}
+        required={required}
         size="small"
         fullWidth={widthFull}
         // style={{backdropFilter:"blur(5px)"}}

@@ -40,9 +40,9 @@ const MainRoutes = {
     {
       path: 'upload',
       element: (
-        // <ProtectedRoute>
+        <ProtectedRoute>
           <Upload />
-        // </ProtectedRoute>
+        </ProtectedRoute>
       )
     },
     {
@@ -88,9 +88,7 @@ const MainRoutes = {
     {
       path: 'oauth/callback',
       element: (
-        <PublicRoute>
-          <OAuthCallback />
-        </PublicRoute>
+        <OAuthCallback />
       )
     },
     {

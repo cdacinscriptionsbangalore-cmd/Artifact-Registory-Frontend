@@ -4,6 +4,7 @@ import { useState } from "react";
 // import { getCookie } from "@/utils/Auth/auth";
 
 import { Snackbar, Alert, Slide, TextField } from "@mui/material";
+import { AnimatePresence, motion } from "framer-motion";
 import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
 
 interface ModelProps {
@@ -45,12 +46,12 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
             onPostError?.("Maximum 200 characters allowed.");
             return;
         }
-    try {
+        try {
 
-      const urlencoded = new URLSearchParams();
-      urlencoded.append("postId", postId);
-      // keep spelling used by backend if required; adjust if backend expects "description"
-      urlencoded.append("discription", inputValue);
+            const urlencoded = new URLSearchParams();
+            urlencoded.append("postId", postId);
+            // keep spelling used by backend if required; adjust if backend expects "description"
+            urlencoded.append("discription", inputValue);
             console.log("Posting description", { postId, inputValue });
             const response = await coreBackendClient.post(`post/addPoastDiscription`, urlencoded);
 
@@ -115,22 +116,22 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
             }
 
             // Fallback: unexpected response
-                console.warn("Unexpected response shape for addPoastDiscription:", respBody);
-                const fallback = {
-                    _id: `local-${Date.now()}`,
-                    postId,
-                    userId: undefined,
-                    username: undefined,
-                    description: inputValue,
-                    upvote: 0,
-                    userVote: [],
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                };
-                onDescriptionAdded?.(fallback);
-                onPostSuccess?.("Description uploaded (fallback)");
-                onClose();
-    } catch (error) {
+            console.warn("Unexpected response shape for addPoastDiscription:", respBody);
+            const fallback = {
+                _id: `local-${Date.now()}`,
+                postId,
+                userId: undefined,
+                username: undefined,
+                description: inputValue,
+                upvote: 0,
+                userVote: [],
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            onDescriptionAdded?.(fallback);
+            onPostSuccess?.("Description uploaded (fallback)");
+            onClose();
+        } catch (error) {
             console.error("Upload failed NOT ERROR:", error);
             // Log richer error details from axios
             try {
@@ -140,7 +141,7 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
                     status: (error as any)?.response?.status,
                     config: (error as any)?.config,
                 });
-            } catch (e) {}
+            } catch (e) { }
 
             if (error instanceof Error) {
                 console.error("Upload failed:", error);
@@ -149,12 +150,12 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
                 console.error("Unknown error:", error);
                 onPostError?.('An unknown error occurred.');
             }
-    } finally {
-      setInputValue("");
-    }
+        } finally {
+            setInputValue("");
+        }
 
-    // console.log("Posting:", inputValue);
-  };
+        // console.log("Posting:", inputValue);
+    };
 
     const handleSnackbarClose = () => {
         setSnackbarOpen(false);
@@ -164,57 +165,73 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
         return <Slide {...props} direction="down" />;
     };
 
-    if (!display) return null; // don't render if hidden
-
     return (
-        <div className="fixed w-screen h-screen z-999 flex items-center justify-center top-0 left-0 bg-black/80" >
-            <div className="bg-secondary-background p-4 rounded shadow flex flex-col gap-5 items-center w-sm" style={{ backgroundColor: "white" }}>
-
-                <div className="w-full">
-                    <TextField
-                        label="Description"
-                        placeholder="This inscription belongs to the 12th century temple walls."
-                        size="small"
-                        value={inputValue || ""}
-                        onChange={(e) => handleInputChange(e.target.value)}
-                        multiline
-                        rows={3}
-                        fullWidth
-                        error={!!errorMsg}
-                        helperText={errorMsg || `${inputValue.length}/200`}
-                        FormHelperTextProps={{ style: { margin: 0 } }}
-                    />
-                </div>
-
-                <div className="w-full flex justify-between">
-                    <button onClick={handlePost} className="ml-2 cursor-pointer bg-orange-400 text-white px-3 py-1 rounded">
-                        Post
-                    </button>
-                    <button onClick={() => {
-                        // prompt user if there's unsaved input
-                        if ((inputValue || "").trim().length > 0) {
-                            const confirmClose = window.confirm("You have unsaved text. Cancel posting and close?\nPress OK to discard, Cancel to continue editing.");
-                            if (!confirmClose) return;
-                        }
-                        onClose();
-                    }} className="ml-2 cursor-pointer bg-slate-700 text-white px-3 py-1 rounded">
-                        Close
-                    </button>
-                </div>
-
-                <Snackbar
-                    open={snackbarOpen}
-                    autoHideDuration={3000}
-                    onClose={handleSnackbarClose}
-                    anchorOrigin={{ vertical: "top", horizontal: "center" }}
-                    TransitionComponent={SlideTransition}
+        <AnimatePresence>
+            {display && (
+                <motion.div
+                    className="fixed w-screen h-screen z-999 flex items-center justify-center top-0 left-0 bg-black/60 backdrop-blur-sm"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
                 >
-                    <Alert onClose={handleSnackbarClose} severity={"success"} sx={{ width: "100%" }}>
-                        {"Description uploaded successfully!"}
-                    </Alert>
-                </Snackbar>
-            </div>
-        </div>
+                    <motion.div
+                        className="bg-secondary-background p-4 rounded-lg shadow-xl flex flex-col gap-5 items-center w-sm"
+                        style={{ backgroundColor: "white" }}
+                        initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                        transition={{ duration: 0.25 }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+
+                        <div className="w-full">
+                            <TextField
+                                label="Description"
+                                placeholder="This inscription belongs to the 12th century temple walls."
+                                size="small"
+                                value={inputValue || ""}
+                                onChange={(e) => handleInputChange(e.target.value)}
+                                multiline
+                                rows={3}
+                                fullWidth
+                                error={!!errorMsg}
+                                helperText={errorMsg || `${inputValue.length}/200`}
+                                FormHelperTextProps={{ style: { margin: 0 } }}
+                            />
+                        </div>
+
+                        <div className="w-full flex justify-between">
+                            <button onClick={handlePost} className="ml-2 cursor-pointer bg-orange-400 text-white px-3 py-1 rounded">
+                                Post
+                            </button>
+                            <button onClick={() => {
+                                // prompt user if there's unsaved input
+                                if ((inputValue || "").trim().length > 0) {
+                                    const confirmClose = window.confirm("You have unsaved text. Cancel posting and close?\nPress OK to discard, Cancel to continue editing.");
+                                    if (!confirmClose) return;
+                                }
+                                onClose();
+                            }} className="ml-2 cursor-pointer bg-slate-700 text-white px-3 py-1 rounded">
+                                Close
+                            </button>
+                        </div>
+
+                        <Snackbar
+                            open={snackbarOpen}
+                            autoHideDuration={3000}
+                            onClose={handleSnackbarClose}
+                            anchorOrigin={{ vertical: "top", horizontal: "center" }}
+                            TransitionComponent={SlideTransition}
+                        >
+                            <Alert onClose={handleSnackbarClose} severity={"success"} sx={{ width: "100%" }}>
+                                {"Description uploaded successfully!"}
+                            </Alert>
+                        </Snackbar>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 };
 

@@ -3,7 +3,9 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { StyleSheetManager } from 'styled-components';
 import './index.css';
+import { enablePhonetic } from "./services/inputInterceptor.ts";
 
+enablePhonetic();
 /**
  * Extract CSP nonce from meta tag injected by nginx
  * This nonce is used by styled-components to comply with CSP

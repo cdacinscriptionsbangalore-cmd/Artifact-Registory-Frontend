@@ -15,7 +15,7 @@ const FeaturedInscriptionsCarousel = () => {
             // location: "Hampi, Karnataka",
             // period: "14th Century",
             image: img1,
-            description: "Detailed Vijayanagara empire inscription with royal decrees",
+            description: "Detailed Vijayanagara empire inscription with royal decrees. The Vijayanagara Empire (1336–1646) left behind a vast corpus of inscriptions, primarily in Kannada, Sanskrit, and Telugu, that provide detailed insights into royal decrees, administrative policies, and social regulations. These records, often inscribed on temple walls or copper plates, were key instruments in legitimizing power and recording land grants. ",
             link: "/feed/68c7a90e62ee5a8274fceaac",
             // likes: 234,
             // views: 1542,
@@ -27,7 +27,7 @@ const FeaturedInscriptionsCarousel = () => {
             // location: "Thanjavur, Tamil Nadu",
             // period: "11th Century",
             image: img2,
-            description: "Chola dynasty land grant inscription with detailed genealogy",
+            description: "Chola dynasty land grant inscription with detailed genealogy. It provides a detailed, often mythological, genealogy starting from Vishnu, through Brahma, Kashyapa, Surya (the Sun), to Manu, and eventually to the mythical King Chola, and historical rulers like Karikala Chola. It traces the lineage up to Rajaraja I and his son Rajendra Chola I",
             link: "/feed/68c7a9a162ee5a8274fceab0",
             // likes: 189,
             // views: 987,
@@ -39,7 +39,7 @@ const FeaturedInscriptionsCarousel = () => {
             // location: "Delhi",
             // period: "13th Century",
             image: img3,
-            description: "Sultanate period architectural inscription from Qutub complex",
+            description: "The Qutb Complex in Delhi features significant Sultanate-period inscriptions (12th-14th centuries) in Arabic and Naskh scripts, primarily adorning the Qutub Minar, Quwwat-ul-Islam Mosque, and Alai Darwaza",
             link: "/feed/68c7a95062ee5a8274fceaae"
             // likes: 156,
             // views: 743,
@@ -107,10 +107,10 @@ const FeaturedInscriptionsCarousel = () => {
                                                 </div>
                                             </div>
 
-                                            <NavLink to={inscription.link} className="bg-gradient-to-r text-primary-text bg-primary px-6 py-3 rounded-lg font-medium transition-all transform hover:scale-105 flex items-center text-stroke">
+                                            {/* <NavLink to={inscription.link} className="bg-gradient-to-r text-primary-text bg-primary px-6 py-3 rounded-lg font-medium transition-all transform hover:scale-105 flex items-center text-stroke">
                                                 Explore Details
                                                 <ChevronRight className="w-5 h-5 ml-2" />
-                                            </NavLink>
+                                            </NavLink> */}
                                         </div>
                                     </div>
                                 </div>

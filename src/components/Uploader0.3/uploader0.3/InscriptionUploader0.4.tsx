@@ -22,10 +22,46 @@ import { Alert, Slide, Snackbar, type SlideProps } from "@mui/material";
 // import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
 import { detectAIClient } from "@/utils/http/clients/detectAIClient";
 
+const isOnline = true; // true => validate with AI, false => skip AI validation only
+
 function SlideDownTransition(props: SlideProps) {
   // direction="down" makes it slide top -> down
   return <Slide {...props} direction="down" />;
 }
+
+const rotateImageDataUrl = (dataUrl: string, degrees = 90): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+
+    image.onload = () => {
+      const normalized = ((degrees % 360) + 360) % 360;
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        reject(new Error("Failed to prepare image canvas."));
+        return;
+      }
+
+      if (normalized === 90 || normalized === 270) {
+        canvas.width = image.height;
+        canvas.height = image.width;
+      } else {
+        canvas.width = image.width;
+        canvas.height = image.height;
+      }
+
+      context.translate(canvas.width / 2, canvas.height / 2);
+      context.rotate((normalized * Math.PI) / 180);
+      context.drawImage(image, -image.width / 2, -image.height / 2);
+
+      const mimeType = dataUrl.match(/^data:(.*?);base64,/)?.[1] || "image/jpeg";
+      resolve(canvas.toDataURL(mimeType));
+    };
+
+    image.onerror = () => reject(new Error("Failed to load image for rotation."));
+    image.src = dataUrl;
+  });
 
 // const dummyPhoto = [
 //   "https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c3RvbmUlMjBpbmNyaXB0aW9ufGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60",
@@ -54,6 +90,11 @@ const EnhancedInscriptionUploader: React.FC = () => {
   } = useInscriptionUploader();
 
   const checkStone = async (imageDataUrl: string): Promise<boolean> => {
+    if (!isOnline) {
+      setStoneCheckResult("Offline mode: AI validation bypassed");
+      return true;
+    }
+
     setIsCheckingStone(true);
     setStoneCheckResult(null);
 
@@ -151,6 +192,24 @@ const EnhancedInscriptionUploader: React.FC = () => {
     } finally {
       // reset input value so same files can be re-selected if needed
       if (e.target) e.target.value = "";
+    }
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    setPhotos((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+  };
+
+  const handleRotatePhoto = async (index: number) => {
+    const targetPhoto = photos[index];
+    if (!targetPhoto) return;
+
+    try {
+      const rotatedPhoto = await rotateImageDataUrl(targetPhoto, 90);
+      setPhotos((prev) =>
+        prev.map((photo, currentIndex) => (currentIndex === index ? rotatedPhoto : photo))
+      );
+    } catch {
+      setError("Failed to rotate selected image.");
     }
   };
 
@@ -252,7 +311,12 @@ const EnhancedInscriptionUploader: React.FC = () => {
                   onCancel={stopCamera}
                 />
               ) : photos.length > 0 ? (
-                <PhotoGrid photos={photos} onReset={resetForm} />
+                <PhotoGrid
+                  photos={photos}
+                  onReset={resetForm}
+                  onRemovePhoto={handleRemovePhoto}
+                  onRotatePhoto={handleRotatePhoto}
+                />
               ) : (
                 <PhotoUploadArea
                   onStartCamera={startCamera}

@@ -3,27 +3,77 @@ import { useNavigate } from "react-router-dom";
 import { authClient } from "@/utils/http/clients/authClient.client";
 import AuthContext from "@/context/AuthContext";
 import cdacRoundLogo from '@/assets/cdacroundlogo.png';
+import { getPostLoginRedirect } from "@/utils/postLoginRedirect";
+
+const MAX_REFRESH_RETRIES = 3;
+const RETRY_DELAY_MS = 700;
+const OAUTH_CALLBACK_GUARD_KEY = "auth:oauth-callback-processed";
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const OAuthCallback = () => {
   const navigate = useNavigate();
-  const { loginSuccess, logout } = useContext(AuthContext);
+  const { loginSuccess } = useContext(AuthContext);
 
   useEffect(() => {
+    // React StrictMode runs effects twice in development.
+    // Guard prevents a second callback pass from overriding the first successful redirect.
+    if (sessionStorage.getItem(OAUTH_CALLBACK_GUARD_KEY) === "1") {
+      return;
+    }
+    sessionStorage.setItem(OAUTH_CALLBACK_GUARD_KEY, "1");
+
+    const navigateToLoginWithNext = () => {
+      sessionStorage.removeItem(OAUTH_CALLBACK_GUARD_KEY);
+      const next = getPostLoginRedirect();
+      if (next) {
+        navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true });
+      } else {
+        navigate("/login", { replace: true });
+      }
+    };
+
     const completeLogin = async () => {
       try {
-        console.log("OAuthCallback: calling refresh-token to complete OAuth flow");
-        const res = await authClient.post("/oauth2/authenticated/refresh-token");
-        console.log("OAuthCallback: refresh response:", res && res.data);
+        let accessToken: string | null = null;
+        let lastError: unknown = null;
 
-        const accessToken = res?.data?.data?.accessToken || res?.data?.auth_token || res?.data?.token;
-        console.log("OAuthCallback: computed accessToken:", accessToken);
+        for (let attempt = 1; attempt <= MAX_REFRESH_RETRIES; attempt++) {
+          try {
+            console.log(`OAuthCallback: refresh attempt ${attempt}/${MAX_REFRESH_RETRIES}`);
+            const res = await authClient.post("/oauth2/authenticated/refresh-token");
+            console.log("OAuthCallback: refresh response:", res && res.data);
+
+            accessToken = res?.data?.data?.accessToken || res?.data?.auth_token || res?.data?.token || null;
+            console.log("OAuthCallback: computed accessToken:", accessToken);
+
+            if (accessToken) break;
+            lastError = new Error("No access token found in refresh response");
+          } catch (error) {
+            lastError = error;
+            console.warn(`OAuthCallback: refresh attempt ${attempt} failed`, {
+              message: (error as any)?.message,
+              status: (error as any)?.response?.status,
+            });
+          }
+
+          if (attempt < MAX_REFRESH_RETRIES) {
+            await wait(RETRY_DELAY_MS * attempt);
+          }
+        }
+
         if (accessToken) {
           loginSuccess(accessToken);
-          navigate("/feed");
+
+          const savedRedirect = getPostLoginRedirect();
+
+          if (savedRedirect && savedRedirect.startsWith("/") && !savedRedirect.startsWith("//")) {
+            navigate(savedRedirect, { replace: true });
+          } else {
+            navigate("/home", { replace: true });
+          }
         } else {
-          console.warn("OAuthCallback: no access token found in response", res?.data);
-          logout();
-          navigate("/login");
+          throw lastError || new Error("OAuth callback failed without an access token");
         }
       } catch (error) {
         console.error("Error completing OAuth login:", {
@@ -31,13 +81,12 @@ const OAuthCallback = () => {
           response: (error as any)?.response?.data,
           status: (error as any)?.response?.status,
         });
-        logout();
-        navigate("/login");
+        navigateToLoginWithNext();
       }
     };
 
     completeLogin();
-  }, []);
+  }, [loginSuccess, navigate]);
 
   return (
     <div className="min-h-screen bg-secondary-background flex items-center justify-center">

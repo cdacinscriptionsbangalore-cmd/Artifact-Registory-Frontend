@@ -16,3 +16,23 @@
     width: auto;
     height: auto;
 } */
+
+/* Force equal thumbnail boxes */
+.image-gallery-thumbnail {
+  width: 110px;        /* choose your size */
+  height: 90px;        /* fixed height */
+  overflow: hidden;
+  padding: 0;
+}
+
+/* Force image to fill box */
+.image-gallery-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;   /* crops instead of stretching */
+}
+
+/* Optional: remove default spacing */
+.image-gallery-thumbnails-container {
+  gap: 8px;
+}

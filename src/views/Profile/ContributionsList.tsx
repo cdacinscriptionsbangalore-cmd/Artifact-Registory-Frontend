@@ -1,4 +1,4 @@
-import { Heart } from "lucide-react";
+import { Heart, ThumbsUp } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 
@@ -110,46 +110,54 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ comments }) => {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h4 className="text-xl font-bold text-black">My Comments</h4>
-        <button
-          onClick={() => setViewAll(!viewAll)}
-          className="text-orange-500 cursor-pointer hover:text-orange-400 text-sm font-medium"
-        >
-          {viewAll ? 'View Less' : 'View All'}
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="mb-6 mt-2 p-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" >
         {displayPosts.length !== 0 && displayPosts.map((post) => (
-          <NavLink to={`https://inscriptions.cdacb.in/feed/${post.postId}`} key={post._id} className="cursor-pointer">
-            <div className="card-styling rounded-lg p-4">
-              <div className="flex items-start justify-between  space-x-3 ">
-                <div className="flex items-center">
+          <NavLink to={`https://inscriptions.cdacb.in/feed/${post.postId}`} key={post._id} className="cursor-pointer" >
+            <div className="card-styling rounded-lg p-4" >
+              <div className="flex justify-between space-x-3 " >
+                <div className="">
                   <img
                     // src={post.postImageUrl || '/default-profile.png'} 
                     src={post.postImageUrl || ''}
                     // src={post.userImageUrl || '/default-profile.png'} 
                     alt={post.description}
-                    className="w-42 h-42 rounded-lg object-cover flex-shrink-0"
+                    className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                   />
 
                 </div>
-                <div>
-                  <h3 className="text-black font-medium">{post.title}</h3>
-                  <div className="mt-3 text-sm">
-                    {post.description}
-                  </div>
+                <div className="flex-1 min-w-0 relative">
+                  <div>
+                    <h3 className="text-black font-medium">{post.description.title}</h3>
+                    <div className="mt-3 text-sm">
+                      {post.description}
+                    </div>
 
-                </div>
-                <div className="flex items-center gap-1 text-orange-500">
-                  <Heart className="w-4 h-4 fill-current" />
-                  {post.upvote}
-                </div>
-                <div className="text-black text-sm mb-3 line-clamp-3 mb-4 pb-4">
-                  <div className="text-gray-500 text-xs absolute right-3 bottom-2">
-                    Added {post.description.subject} • {formatDate(post.createdAt)}
+                  </div>
+                  <div className="text-black text-sm mb-3 line-clamp-3 mb-4 pb-4">
+
+                    <div className="text-gray-500 text-xs absolute right-3 top-14 flex justify-around items-center gap-4">
+                      <div className="flex items-center gap-1 text-orange-500">
+                        <ThumbsUp className={`w-4 h-4 fill-current`} />
+                        {post.upvote} {post.upvote !== 1 ? "Upvotes" : "Upvote"}
+                      </div>
+
+                      {/* Added {post.description.subject || "No Subject"} • {formatDate(post.createdAt)} */}
+                      <span className="text-gray-500 text-xs">
+                        Added on &nbsp;
+                        {new Intl.DateTimeFormat("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "2-digit",
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        })
+                          .format(new Date(post.createdAt))
+                          .replace(",", "")
+                        } • {formatDate(post.createdAt)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -165,6 +173,16 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ comments }) => {
           </NavLink>
         ))}
       </div>
+      <div className="flex justify-center items-center mt-7">
+        {/* <h4 className="text-xl font-bold text-black">My Comments</h4> */}
+        <button
+          onClick={() => setViewAll(!viewAll)}
+          className="text-orange-500 cursor-pointer hover:text-orange-400 text-sm font-medium"
+        >
+          {viewAll ? 'View Less' : 'View All'}
+        </button>
+      </div>
+
     </div>
   );
 };

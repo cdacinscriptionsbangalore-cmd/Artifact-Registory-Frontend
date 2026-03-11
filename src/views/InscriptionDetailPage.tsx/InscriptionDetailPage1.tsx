@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ThumbsUp, MapPin, Calendar, Languages, BookOpen, Plus, MessageSquareWarning, Star } from 'lucide-react';
+import { ThumbsUp, MapPin, Calendar, Languages, BookOpen, Plus, MessageSquareWarning, Star, Trash, Edit } from 'lucide-react';
 import CommentCard from './CommentCard';
 // import RatingModal from './RatingModal';
-import { useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 // import Model from './Model';
 import Modal from './Modal';
 // import ImageCarousel from './ImageCarousel';
@@ -12,14 +12,16 @@ import Modal from './Modal';
 // import placeholderImage3 from '@/assets/parallaxImages/banner3.jpg';
 // import placeholderImage4 from '@/assets/parallaxImages/banner4.png';
 import ImageCarousel1 from './ImageCarousel1';
-import { Snackbar, Alert, Slide, Tooltip } from "@mui/material";
+import { Snackbar, Alert, Slide, Tooltip, MenuItem, TextField } from "@mui/material";
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import RatingModal1 from './RatingModal1';
 import cdacRoundLogo from '@/assets/cdacroundlogo.png';
 import type { User } from '@/types';
 import ShareModal from '@/components/ShareModal/ShareModal';
 import { coreBackendClient } from '@/utils/http/clients/coreBackend.client';
-import { dummyPost, dummyComments } from './dummyData';
+import mockDiscoveryPosts from '@/Db/feeds';
+import { getDummyCommentsByPostId } from './dummyData';
+import { AnimatePresence, motion } from "framer-motion";
 
 const USE_FALLBACK = false;
 
@@ -45,7 +47,9 @@ interface UserRating {
 interface Post {
     _id: string;
     user_id: string;
-    user_name: string;
+    user_name?: string;
+    username?: string;
+    userName?: string;
     createdAt: Date;
     images: {
         thumbnailImage: string[];
@@ -75,6 +79,103 @@ interface Post {
     rating: number;
 }
 
+
+interface EditPostFormState {
+    title: string;
+    topic: string;
+    type: string;
+    description: string;
+}
+
+
+const normalizeEntityId = (rawId: unknown): string => {
+    if (typeof rawId === "string") return rawId;
+    if (typeof rawId === "number" || typeof rawId === "bigint") return String(rawId);
+
+    if (rawId && typeof rawId === "object") {
+        const rawObj = rawId as Record<string, unknown>;
+        const nestedId =
+            rawObj.$oid ?? rawObj.oid ?? rawObj._id ?? rawObj.id ?? rawObj.userId ?? rawObj.user_id;
+        if (nestedId && nestedId !== rawId) {
+            return normalizeEntityId(nestedId);
+        }
+    }
+
+    return "";
+};
+
+const unwrapApiData = (payload: unknown): any => {
+    if (payload && typeof payload === "object" && "data" in payload) {
+        return (payload as { data: unknown }).data;
+    }
+    return payload;
+};
+
+const resolveApiSuccess = (body: any, payload: any): boolean => {
+    if (typeof body?.ok === "boolean") return body.ok;
+    if (typeof payload?.ok === "boolean") return payload.ok;
+    if (body?.data === false || payload === false || payload?.data === false) return false;
+    return true;
+};
+
+const resolveApiMessage = (body: any, payload: any, fallback: string): string => {
+    if (typeof body?.message === "string" && body.message.trim()) return body.message;
+    if (typeof payload?.message === "string" && payload.message.trim()) return payload.message;
+    return fallback;
+};
+
+const toVoteUserIds = (rawVote: unknown): string[] => {
+    if (!Array.isArray(rawVote)) return [];
+
+    return rawVote
+        .map((entry) => {
+            if (typeof entry === "string") return normalizeEntityId(entry);
+            if (entry && typeof entry === "object") {
+                const voteObj = entry as Record<string, unknown>;
+                const candidate = voteObj.userId ?? voteObj.user_id ?? voteObj._id ?? voteObj.id;
+                return normalizeEntityId(candidate);
+            }
+            return "";
+        })
+        .filter((userId): userId is string => Boolean(userId))
+        .filter((userId, index, arr) => arr.indexOf(userId) === index);
+};
+
+const normalizeComment = (rawComment: any, fallbackPostId: string, currentUser?: User): Comment => {
+    const createdAtRaw = rawComment?.createdAt ?? rawComment?.created_at;
+    const updatedAtRaw = rawComment?.updatedAt ?? rawComment?.updated_at;
+    const normalizedId = rawComment?._id ?? rawComment?.id ?? `local-${Date.now()}`;
+
+    return {
+        id: normalizeEntityId(rawComment?.id ?? rawComment?._id ?? normalizedId) || normalizedId,
+        _id: normalizeEntityId(normalizedId) || normalizedId,
+        postId: normalizeEntityId(rawComment?.postId ?? rawComment?.post_id ?? fallbackPostId) || fallbackPostId,
+        userId:
+            normalizeEntityId(rawComment?.userId ?? rawComment?.user_id ?? rawComment?.user_id_fk ?? currentUser?._id) ||
+            "unknown",
+        username:
+            rawComment?.username ??
+            rawComment?.user_name ??
+            rawComment?.name ??
+            rawComment?.user?.name ??
+            currentUser?.name ??
+            "Unknown",
+        userImageUrl: rawComment?.userImageUrl ?? rawComment?.user_image_url ?? rawComment?.user?.image,
+        createdAt: createdAtRaw ? new Date(createdAtRaw) : new Date(),
+        updatedAt: updatedAtRaw ? new Date(updatedAtRaw) : new Date(),
+        description: rawComment?.description ?? rawComment?.discription ?? rawComment?.comment ?? "",
+        upvote:
+            typeof rawComment?.upvote === "number"
+                ? rawComment.upvote
+                : typeof rawComment?.upvotes === "number"
+                    ? rawComment.upvotes
+                    : typeof rawComment?.likes === "number"
+                        ? rawComment.likes
+                        : 0,
+        userVote: toVoteUserIds(rawComment?.userVote ?? rawComment?.user_vote),
+    };
+};
+
 // const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
 
 // Main Inscription Details Component
@@ -94,6 +195,16 @@ const InscriptionDetailsPage: React.FC = () => {
     const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
     const [userDetails, setUserDetails] = useState(undefined as User | undefined);
     const [description, setDescription] = useState<string>(""); // populate from fetch/original data
+    const [showDeletePostModal, setShowDeletePostModal] = useState(false);
+    const [isDeletingPost, setIsDeletingPost] = useState(false);
+    const [showEditPostModal, setShowEditPostModal] = useState(false);
+    const [isUpdatingPost, setIsUpdatingPost] = useState(false);
+    const [editPostForm, setEditPostForm] = useState<EditPostFormState>({
+        title: "",
+        topic: "",
+        type: "Stone",
+        description: "",
+    });
 
     const handleOpen = () => setDisplay(true);
     const handleClose = () => setDisplay(false);
@@ -101,6 +212,8 @@ const InscriptionDetailsPage: React.FC = () => {
 
     // inside your component
     const { id: postId } = useParams<{ id: string }>();
+    const location = useLocation();
+    const navigate = useNavigate();
 
     useEffect(() => {
         setLoading(true);
@@ -111,8 +224,12 @@ const InscriptionDetailsPage: React.FC = () => {
                 name: "John Doe",
             } as User);
 
-            setPost(dummyPost);
-            setComments(dummyComments);
+            const matchedFallbackPost =
+                mockDiscoveryPosts.data.find((fallbackPost) => String(fallbackPost._id) === String(postId)) ??
+                mockDiscoveryPosts.data[0];
+            setPost((matchedFallbackPost ?? null) as unknown as Post | null);
+            const selectedFallbackPostId = matchedFallbackPost?._id ?? postId;
+            setComments(getDummyCommentsByPostId(selectedFallbackPostId));
             setLoading(false);
             return;
         }
@@ -122,9 +239,10 @@ const InscriptionDetailsPage: React.FC = () => {
         const fetchUserDetails = async () => {
             try {
                 const response = await coreBackendClient.post("post/userProfile");
-                const { data } = response.data;
-                console.log("Fetched user details:", data);
-                setUserDetails(data);
+                const payload = unwrapApiData(response.data);
+                const normalizedUser = Array.isArray(payload) ? payload[0] : payload;
+                console.log("Fetched user details:", normalizedUser);
+                setUserDetails(normalizedUser as User);
             } catch (error) {
                 console.error("Failed to fetch user details:", error);
             }
@@ -141,8 +259,12 @@ const InscriptionDetailsPage: React.FC = () => {
             try {
                 const response = await coreBackendClient.post(`post/getAllPost`);
 
-                const { data } = response.data;
-                const allPosts = Array.isArray(data) ? data : [];
+                const payload = unwrapApiData(response.data);
+                const allPosts = Array.isArray(payload)
+                    ? payload
+                    : Array.isArray(payload?.data)
+                        ? payload.data
+                        : [];
                 const matchedPost =
                     allPosts.find((p: Post) => String(p._id) === String(postId)) || null;
 
@@ -161,15 +283,23 @@ const InscriptionDetailsPage: React.FC = () => {
                 return;
             }
             try {
-                
+
                 const urlencoded = new URLSearchParams();
                 urlencoded.append("postId", postId);
 
                 const response = await coreBackendClient.post(`post/getPostDiscription`, urlencoded);
 
-                const { data } = response.data;
-                const fetchedComments = Array.isArray(data) ? data : [];
-                setComments(fetchedComments);
+                const payload = unwrapApiData(response.data);
+                const fetchedComments = Array.isArray(payload)
+                    ? payload
+                    : Array.isArray(payload?.data)
+                        ? payload.data
+                        : [];
+                setComments(
+                    fetchedComments.map((comment: any) =>
+                        normalizeComment(comment, postId)
+                    )
+                );
             } catch (error) {
                 console.error('Failed to fetch comments:', error);
             } finally {
@@ -240,19 +370,7 @@ const InscriptionDetailsPage: React.FC = () => {
     const handleDescriptionAdded = (createdComment: any) => {
         // If backend returned a comment object, normalize fields to our Comment shape and prepend
         if (createdComment && typeof createdComment === 'object') {
-            const cc: any = createdComment;
-            const normalized: Comment = {
-                _id: cc._id ?? cc.id ?? `local-${Date.now()}`,
-                postId: cc.postId ?? cc.post_id ?? (postId as string),
-                userId: cc.userId ?? cc.user_id ?? cc.user_id_fk ?? userDetails?._id ?? 'unknown',
-                username: cc.username ?? cc.user_name ?? cc.name ?? userDetails?.name ?? 'You',
-                userImageUrl: cc.userImageUrl ?? cc.user_image_url ?? undefined,
-                createdAt: cc.createdAt ? new Date(cc.createdAt) : new Date(),
-                updatedAt: cc.updatedAt ? new Date(cc.updatedAt) : new Date(),
-                description: cc.description ?? cc.discription ?? cc.comment ?? '',
-                upvote: typeof cc.upvote === 'number' ? cc.upvote : (typeof cc.upvotes === 'number' ? cc.upvotes : 0),
-                userVote: Array.isArray(cc.userVote) ? cc.userVote : (Array.isArray(cc.user_vote) ? cc.user_vote : []),
-            };
+            const normalized = normalizeComment(createdComment, postId as string, userDetails);
 
             setComments(prev => [normalized, ...prev]);
             setDescription(normalized.description);
@@ -261,20 +379,62 @@ const InscriptionDetailsPage: React.FC = () => {
 
         // Fallback: a simple string was passed — create a minimal local comment
         if (typeof createdComment === 'string') {
-            const newComment: Comment = {
-                _id: `local-${Date.now()}`,
-                postId: postId as string,
-                userId: userDetails?._id ?? 'unknown',
-                username: userDetails?.name ?? 'You',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                description: createdComment,
-                upvote: 0,
-                userVote: [],
-            };
+            const newComment = normalizeComment(
+                { description: createdComment, postId: postId as string },
+                postId as string,
+                userDetails
+            );
             setComments(prev => [newComment, ...prev]);
             setDescription(createdComment);
         }
+    };
+
+    const handleCommentLikeUpdated = (commentId: string, updates: Partial<Comment>) => {
+        setComments((prevComments) =>
+            prevComments.map((comment) => {
+                const existingId = comment._id ?? comment.id;
+                if (String(existingId) !== String(commentId)) return comment;
+
+                return {
+                    ...comment,
+                    upvote:
+                        typeof updates.upvote === "number"
+                            ? updates.upvote
+                            : comment.upvote,
+                    userVote: Array.isArray(updates.userVote) ? updates.userVote : comment.userVote,
+                };
+            })
+        );
+    };
+
+    const handleCommentUpdated = (commentId: string, updates: Partial<Comment>) => {
+        setComments((prevComments) =>
+            prevComments.map((comment) => {
+                const existingId = comment._id ?? comment.id;
+                if (String(existingId) !== String(commentId)) return comment;
+
+                return {
+                    ...comment,
+                    description:
+                        typeof updates.description === "string"
+                            ? updates.description
+                            : comment.description,
+                    updatedAt:
+                        updates.updatedAt instanceof Date
+                            ? updates.updatedAt
+                            : comment.updatedAt,
+                };
+            })
+        );
+    };
+
+    const handleCommentDeleted = (commentId: string) => {
+        setComments((prevComments) =>
+            prevComments.filter((comment) => {
+                const existingId = comment._id ?? comment.id;
+                return String(existingId) !== String(commentId);
+            })
+        );
     };
 
 
@@ -313,7 +473,166 @@ const InscriptionDetailsPage: React.FC = () => {
         setSnackbarSeverity("error");
         setSnackbarOpen(true);
     };
-    const postToRender = post ?? dummyPost;
+
+    const handleConfirmDeletePost = async () => {
+        const resolvedPostId = normalizeEntityId(postToRender?._id) || normalizeEntityId(postId);
+        if (!resolvedPostId) {
+            handlePostError("Post id missing. Unable to delete.");
+            return;
+        }
+
+        setIsDeletingPost(true);
+        try {
+            const urlencoded = new URLSearchParams();
+            urlencoded.append("postId", resolvedPostId);
+
+            const response = await coreBackendClient.post(
+                "post/postDelete",
+                urlencoded,
+                {
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                }
+            );
+
+            const body = response?.data;
+            const payload = unwrapApiData(body);
+            const success = resolveApiSuccess(body, payload);
+
+            if (!success) {
+                throw new Error(resolveApiMessage(body, payload, "Failed to delete post."));
+            }
+
+            setShowDeletePostModal(false);
+            handlePostSuccess("Post deleted successfully.");
+            window.setTimeout(() => {
+                navigate("/feed", { replace: true });
+            }, 1400);
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : "Failed to delete post.";
+            handlePostError(message);
+        } finally {
+            setIsDeletingPost(false);
+        }
+    };
+
+    const postToRender = post ?? mockDiscoveryPosts.data[0] as unknown as Post;
+    const authorNameFromNav = (location.state as { authorName?: string } | null)?.authorName;
+    const postAuthorName =
+        postToRender.username ??
+        postToRender.user_name ??
+        postToRender.userName ??
+        authorNameFromNav ??
+        "Anonymous";
+    const currentUserId = normalizeEntityId(userDetails?._id);
+    const postOwnerId = normalizeEntityId(postToRender.user_id);
+    const isPostAuthor = Boolean(currentUserId && postOwnerId && currentUserId === postOwnerId);
+    const normalizeInscriptionType = (value?: string) => {
+        if (value === "Stone" || value === "Metal" || value === "Clay") {
+            return value;
+        }
+        return "Stone";
+    };
+
+    const handleOpenEditPostModal = () => {
+        setEditPostForm({
+            title: postToRender?.description?.title ?? "",
+            topic: postToRender?.topic ?? "",
+            type: normalizeInscriptionType(postToRender?.type),
+            description: postToRender?.description?.description ?? "",
+        });
+        setShowEditPostModal(true);
+    };
+
+    const handleEditPostFieldChange = (field: keyof EditPostFormState, value: string) => {
+        setEditPostForm((previous) => ({ ...previous, [field]: value }));
+    };
+
+    const handleConfirmEditPost = async () => {
+        const resolvedPostId = normalizeEntityId(postToRender?._id) || normalizeEntityId(postId);
+        if (!resolvedPostId) {
+            handlePostError("Post id missing. Unable to edit.");
+            return;
+        }
+
+        const trimmedTitle = (editPostForm.title ?? "").trim();
+        const trimmedTopic = (editPostForm.topic ?? "").trim();
+        const trimmedDescription = (editPostForm.description ?? "").trim();
+        const normalizedType = normalizeInscriptionType(editPostForm.type);
+
+        if (!trimmedTitle) {
+            handlePostError("Title is required.");
+            return;
+        }
+
+        if (!trimmedTopic) {
+            handlePostError("Topic is required.");
+            return;
+        }
+
+        if (!trimmedDescription) {
+            handlePostError("Description is required.");
+            return;
+        }
+
+        setIsUpdatingPost(true);
+        try {
+            const postPayload = {
+                description: {
+                    title: trimmedTitle,
+                    subject: trimmedTopic,
+                    description: trimmedDescription,
+                    scriptLanguage: postToRender?.description?.scriptLanguage ?? [],
+                    language: postToRender?.description?.language ?? [],
+                },
+                topic: trimmedTopic,
+                script: postToRender?.script ?? [],
+                type: normalizedType,
+                visiblity: true,
+            };
+
+            const form = new FormData();
+            form.append(
+                "post",
+                new Blob([JSON.stringify(postPayload)], { type: "application/json" })
+            );
+            form.append("postId", resolvedPostId);
+
+            const response = await coreBackendClient.post("post/updatePost", form);
+
+            const body = response?.data;
+            const payload = unwrapApiData(body);
+            const success = resolveApiSuccess(body, payload);
+
+            if (!success) {
+                throw new Error(resolveApiMessage(body, payload, "Failed to update post."));
+            }
+
+            setPost((previous) => {
+                if (!previous) return previous;
+                return {
+                    ...previous,
+                    topic: trimmedTopic,
+                    type: normalizedType,
+                    description: {
+                        ...previous.description,
+                        title: trimmedTitle,
+                        description: trimmedDescription,
+                    },
+                };
+            });
+            setShowEditPostModal(false);
+            handlePostSuccess("Post updated successfully.");
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : "Failed to update post.";
+            handlePostError(message);
+        } finally {
+            setIsUpdatingPost(false);
+        }
+    };
     // const commentsToRender = comments.length > 0 ? comments : dummyComments;
 
     return (
@@ -339,6 +658,129 @@ const InscriptionDetailsPage: React.FC = () => {
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
+
+            <AnimatePresence >
+                {showEditPostModal && (
+                    <motion.div
+                        className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setShowEditPostModal(false)}
+
+                    >
+                        <motion.div
+                            className="w-full max-w-xl rounded-xl bg-white p-5 shadow-2xl"
+                            initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                            transition={{ duration: 0.25 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h4 className="text-lg font-semibold text-gray-900 mb-4">Edit</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <TextField
+                                    label="Title"
+                                    size="small"
+                                    value={editPostForm.title}
+                                    onChange={(event) => handleEditPostFieldChange("title", event.target.value)}
+                                    disabled={isUpdatingPost}
+                                    fullWidth
+                                />
+                                <TextField
+                                    label="Topic"
+                                    size="small"
+                                    value={editPostForm.topic}
+                                    onChange={(event) => handleEditPostFieldChange("topic", event.target.value)}
+                                    disabled={isUpdatingPost}
+                                    fullWidth
+                                />
+                                <TextField
+                                    select
+                                    label="Type"
+                                    size="small"
+                                    value={editPostForm.type}
+                                    onChange={(event) => handleEditPostFieldChange("type", event.target.value)}
+                                    disabled={isUpdatingPost}
+                                    fullWidth
+                                >
+                                    <MenuItem value="Stone">Stone</MenuItem>
+                                    <MenuItem value="Metal">Metal</MenuItem>
+                                    <MenuItem value="Clay">Clay</MenuItem>
+                                </TextField>
+                                <TextField
+                                    label="Description"
+                                    size="small"
+                                    value={editPostForm.description}
+                                    onChange={(event) => handleEditPostFieldChange("description", event.target.value)}
+                                    disabled={isUpdatingPost}
+                                    multiline
+                                    minRows={3}
+                                    fullWidth
+                                />
+                            </div>
+                            <div className="mt-5 flex items-center justify-end gap-2">
+                                <button
+                                    onClick={() => setShowEditPostModal(false)}
+                                    disabled={isUpdatingPost}
+                                    className="px-3 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-60 cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleConfirmEditPost}
+                                    disabled={isUpdatingPost}
+                                    className="px-3 py-2 rounded-md bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-60 cursor-pointer"
+                                >
+                                    {isUpdatingPost ? "Saving..." : "Save Changes"}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showDeletePostModal && (
+                    <motion.div
+                        className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setShowDeletePostModal(false)}
+                    >
+                        <motion.div
+                            className="w-full max-w-md rounded-xl bg-white p-5 shadow-2xl"
+                            initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                            transition={{ duration: 0.25 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h4 className="text-lg font-semibold text-gray-900 mb-2">Delete</h4>
+                            <p className="text-sm text-gray-700 mb-5">
+                                Are you sure you want to delete this post? This action cannot be undone.
+                            </p>
+                            <div className="flex items-center justify-end gap-2">
+                                <button
+                                    onClick={() => setShowDeletePostModal(false)}
+                                    disabled={isDeletingPost}
+                                    className="px-3 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-60 cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleConfirmDeletePost}
+                                    disabled={isDeletingPost}
+                                    className="px-3 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 cursor-pointer"
+                                >
+                                    {isDeletingPost ? "Deleting..." : "Delete"}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <div className="max-w-7xl mx-auto p-1 flex justify-between gap-30 sm:p-4 flex-col md:flex-row sm:justify-center sm:gap-10">
                 {/* 
@@ -379,8 +821,8 @@ const InscriptionDetailsPage: React.FC = () => {
                                             <Star />{postToRender.rating ? Number(postToRender.rating).toFixed(1) : 0}
                                         </span>
                                     </Tooltip>
-
                                 </div>
+
                                 <div className="flex gap-3">
                                     <button
                                         onClick={() => setShowRatingModal(true)}
@@ -388,13 +830,6 @@ const InscriptionDetailsPage: React.FC = () => {
                                     >
                                         Rate
                                     </button>
-                                    {/* <button
-                                        onClick={() => setIsBookmarked(!isBookmarked)}
-                                        className={`px-4 py-2 rounded-lg cursor-pointer border-1 border-solid border-gray-600 transition-colors ${isBookmarked ? 'bg-red-500 text-white border-pink-600 border-solid border-1' : 'bg-white text-black-100 hover:bg-red-400 hover:text-white '
-                                            }`}
-                                    >
-                                        <Heart className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
-                                    </button> */}
                                     {postToRender.description.geolocation?.lat !== undefined &&
                                         postToRender.description.geolocation?.lon !== undefined && (
                                             <Tooltip title="Locate on Google Maps">
@@ -408,25 +843,25 @@ const InscriptionDetailsPage: React.FC = () => {
                                                     <LocationOnIcon className='w-5 h-5 text-red-500' />
                                                 </button>
                                             </Tooltip>
-
                                         )}
-                                    {/* {post.description.geolocation?.lat !== undefined &&
-                                        post.description.geolocation?.lon !== undefined && (
+                                    {isPostAuthor && (
+                                        <div className="flex gap-2">
                                             <button
-                                                onClick={() => handleClick(
-                                                    post.description.geolocation!.lat!,
-                                                    post.description.geolocation!.lon
-                                                )}
-                                                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                                                onClick={handleOpenEditPostModal}
+                                                className="flex items-center space-x-2 md:px-6 md:py-2 px-3 py-1 cursor-pointer bg-blue-500 border-1 border-blue-800 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
                                             >
-                                                <MapPin className='w-5 h-5' />
+                                                <Edit className="w-5 h-5" />
+                                                <div>Edit</div>
                                             </button>
-                                        )} */}
-                                    <ShareModal />
-
-                                    {/* <button className="px-4 py-2 cursor-pointer bg-blue-500 text-white rounded-lg hover:bg-blue-400 transition-colors">
-                                        <Share2 className="w-5 h-5" />
-                                    </button> */}
+                                            <button
+                                                onClick={() => setShowDeletePostModal(true)}
+                                                className="flex items-center space-x-2 md:px-6 md:py-2 px-3 py-1 cursor-pointer bg-red-500 border-1 border-red-800 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+                                            >
+                                                <Trash className="w-5 h-5" />
+                                                <div>Delete</div>
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -438,19 +873,20 @@ const InscriptionDetailsPage: React.FC = () => {
                             <div className="bg-secondary-background rounded-lg mb-6">
                                 <div className="flex items-start justify-between mb-3">
                                     <div className="flex-1">
-                                        <div className='flex justify-between items-start'>
+                                        <div className='flex justify-between items-center mb-2'>
 
                                             <div className="flex mb-2 items-center">
-                                                <h4 className=" font-semibold text-lg">{postToRender.user_name}</h4>
+                                                <h4 className=" font-semibold text-lg capitalize">Author: {postAuthorName}</h4>
                                                 {/* <h4 className=" font-semibold text-lg">{post.user_name}</h4> */}
-                                                <span className="text-[#000000] ms-2">User rating: ({postToRender.userrating?.length})</span>
+                                                {/* <span className="text-[#000000] ms-2">User rating: ({postToRender.userrating?.length})</span> */}
                                                 {/* <span className="text-[#000000] ms-2">User rating: ({post.userrating?.length})</span> */}
                                             </div>
-                                            <div className="ml-4 flex items-center gap-1 text-blue-400">
+                                            {/* <div className="ml-4 flex items-center gap-1 text-blue-400">
                                                 <ThumbsUp className="w-4 h-4 fill-current" />
                                                 <span className="font-medium">{postToRender.description.upvote || 0}</span>
-                                                {/* <span className="font-medium">{post.description.upvote || 0}</span> */}
-                                            </div>
+                                                <span className="font-medium">{post.description.upvote || 0}</span>
+                                            </div> */}
+
                                         </div>
 
 
@@ -544,8 +980,8 @@ const InscriptionDetailsPage: React.FC = () => {
                                         {/* Translation */}
                                         {/* {post.description.englishTranslation && ( */}
                                         <div className="mt-4 p-3 bg-white border-1 border-solid border-yellow-400 rounded-lg">
-                                            <h5 className="text-orange-400 font-medium mb-2">English Translation:</h5>
-                                            <p className="text-black italic">"{postToRender.description.englishTranslation || "Translation unavailable"}"</p>
+                                            <h5 className="text-orange-400 font-medium mb-2">Transcription:</h5>
+                                            <p className="text-black italic">"{postToRender.description.englishTranslation || "Transcription unavailable"}"</p>
                                             {/* <p className="text-black italic">"{post.description.englishTranslation || "this is a transation"}"</p> */}
                                         </div>
                                         {/* )} */}
@@ -567,7 +1003,7 @@ const InscriptionDetailsPage: React.FC = () => {
 
                     <div className="w-full flex justify-between gap-4">
                         <div className="mb-8">
-                            <h3 className="text-lg font-bold mb-6 pt-2">Top Comments</h3>
+                            <h3 className="text-lg font-bold mb-6 pt-2">Transcriptions</h3>
                         </div>
                         {/* Add Description Button */}
                         <div className="">
@@ -577,7 +1013,7 @@ const InscriptionDetailsPage: React.FC = () => {
                             >
                                 <Plus className="w-5 h-5" />
                                 <span className='pe-2'>
-                                    Add Your Description
+                                    Add Transcription
                                 </span>
                             </button>
                         </div>
@@ -594,6 +1030,11 @@ const InscriptionDetailsPage: React.FC = () => {
                                     key={comment.id ?? comment._id}
                                     comments={comment}
                                     currentUser={userDetails}
+                                    onLikeUpdated={handleCommentLikeUpdated}
+                                    onCommentUpdated={handleCommentUpdated}
+                                    onCommentDeleted={handleCommentDeleted}
+                                    onActionSuccess={handlePostSuccess}
+                                    onActionError={handlePostError}
                                 />
                             ))}
 

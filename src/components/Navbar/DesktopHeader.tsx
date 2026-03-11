@@ -8,7 +8,7 @@ const DesktopHeader = () => (
       <img src={logo} className="h-11" />
       <div>
         <h1 className="text-xl font-bold text-primary-text">Inscriptions Platform</h1>
-        <p className="text-sm text-primary-text">C-DAC Bangalore</p>
+        <p className="text-sm text-primary-text">Bangalore</p>
       </div>
     </NavLink>
     <img src={meityLogo} className="h-18" />

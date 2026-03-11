@@ -3,6 +3,8 @@ import logo from "@assets/Frame1.png"
 import "./Footer.css";
 
 const Footer: React.FC = () => {
+    const date = new Date();
+    const year = date.getFullYear();
     return (
         <footer className="footer-styling border-t border-slate-700/50 dark:border-slate-600 py-12 dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ backgroundColor: "none" }} >
@@ -68,7 +70,7 @@ const Footer: React.FC = () => {
                 </div>
 
                 <div className="border-t border-white-700 dark:border-white mt-12 pt-8 text-center text-primary-text dark:text-white">
-                    <p>&copy; 2025 Centre for Development of Advanced Computing (C-DAC). All rights reserved.</p>
+                    <p>&copy; {year}-{(year+1).toString().slice(2)} Centre for Development of Advanced Computing (C-DAC). All rights reserved.</p>
                 </div>
             </div>
         </footer>

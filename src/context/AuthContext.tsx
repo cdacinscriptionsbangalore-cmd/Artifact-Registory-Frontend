@@ -1,8 +1,9 @@
 // context/AuthContext.tsx
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useRef } from "react";
 import { authStore } from "@/store/authStore";
 import { authClient } from "@/utils/http/clients/authClient.client";
 import { apiClient } from "@/utils/http/clients/backendApiClientGeneral";
+import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
 
 type AuthContextType = {
   isAuthenticated: boolean;
@@ -16,9 +17,11 @@ const AuthContext = createContext<AuthContextType>(null!);
 export const AuthProvider = (props: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const hasLoginSucceededRef = useRef(false);
 
   const loginSuccess = (token: string) => {
     authStore.setToken(token);
+    hasLoginSucceededRef.current = true;
     console.log("Token received in AuthContext:", token);
     if (typeof token === "undefined" || token === null) {
       try {
@@ -65,8 +68,11 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
           console.log("useEffect in AuthContext: User is authenticated.");
         } else {
           console.warn("AuthContext.bootstrap: no token found in refresh response", res?.data);
-          authStore.clear();
-          setIsAuthenticated(false);
+          // Avoid stale bootstrap response overriding a successful OAuth callback login.
+          if (!hasLoginSucceededRef.current && !authStore.getToken()) {
+            authStore.clear();
+            setIsAuthenticated(false);
+          }
         }
       } catch (error) {
         console.error("AuthContext.bootstrap: refresh failed:", {
@@ -74,8 +80,11 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
           response: (error as any)?.response?.data,
           status: (error as any)?.response?.status,
         });
-        authStore.clear();
-        setIsAuthenticated(false);
+        // Avoid stale bootstrap failure overriding a successful OAuth callback login.
+        if (!hasLoginSucceededRef.current && !authStore.getToken()) {
+          authStore.clear();
+          setIsAuthenticated(false);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -92,10 +101,21 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
       try {
         authStore.clear();
       } catch {}
+
+      const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      const isAuthFlowPath = window.location.pathname === "/login" || window.location.pathname === "/oauth/callback";
+      if (!isAuthFlowPath) {
+        setPostLoginRedirect(currentPath);
+      }
+
       setIsAuthenticated(false);
       setIsLoading(false);
       // navigate to login (hard navigation ensures a clean state)
-      window.location.href = "/login";
+      if (!isAuthFlowPath) {
+        window.location.href = `/login?next=${encodeURIComponent(currentPath)}`;
+      } else {
+        window.location.href = "/login";
+      }
     };
 
     window.addEventListener("app:unauthorized", handleUnauthorized as EventListener);

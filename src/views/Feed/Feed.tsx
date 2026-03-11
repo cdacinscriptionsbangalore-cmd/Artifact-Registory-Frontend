@@ -5,13 +5,24 @@ import DiscoveryCard from './DiscoveryCard';
 import FilterBar from './FilterBar';
 import mockDiscoveryPosts from "@/Db/feeds";
 import { SearchX } from 'lucide-react';
-import InfiniteScroll from 'react-infinite-scroll-component';
-import { CircularProgress } from '@mui/material';
+// import InfiniteScroll from 'react-infinite-scroll-component';
+// import { CircularProgress } from '@mui/material';
 import { coreBackendClient } from '@/utils/http/clients/coreBackend.client';
+import { useSearchParams } from 'react-router-dom';
 // import { getTokenFromCookie } from '@/utils/cookieUtils';
-const backendApiUrl = window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
 
-const isOffline = false;   // true → use mock data, false → use API
+const isOffline = false;   // true => use mock data, false => use API
+const getPageFromParams = (params: URLSearchParams) => {
+  const pageParam = Number(params.get('page'));
+  return Number.isFinite(pageParam) && pageParam > 0 ? Math.floor(pageParam) : 1;
+};
+
+const unwrapApiData = (payload: unknown): any => {
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return (payload as { data: unknown }).data;
+  }
+  return payload;
+};
 
 export interface Post {
   _id: string;
@@ -30,10 +41,13 @@ export interface Post {
 
 // Main Discovery Feed Component
 const Feed = () => {
-  const PAGE_SIZE = 3;
+  const PAGE_SIZE = 6;
   const [layout, setLayout] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [UserDetails, SetUserDetails] = useState<any | null>(null);
+  const [hasFetchedPosts, setHasFetchedPosts] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [currentPage, setCurrentPage] = useState<number>(() => getPageFromParams(searchParams));
 
   type Post = {
     _id: string;
@@ -55,7 +69,7 @@ const Feed = () => {
   // const [visiblePosts, setVisiblePosts] = useState(
   //   mockDiscoveryPosts.data.slice(0, PAGE_SIZE)
   // );
-  const [visiblePosts, setVisiblePosts] = useState<Post[]>([]); // paginated slice
+  // const [visiblePosts, setVisiblePosts] = useState<Post[]>([]); // infinite-scroll slice
 
 
   // function getCookie(name: string): string | null {
@@ -84,35 +98,42 @@ const Feed = () => {
         }));
       } else {
         // const token = getCookie("token");
-        const response = await coreBackendClient.post(`${backendApiUrl}post/getAllPost`);
+        const response = await coreBackendClient.post('post/getAllPost');
 
-        const { data } = response;
-        allPosts = Array.isArray(data.data) ? data.data : [];
+        const payload = unwrapApiData(response.data);
+        allPosts = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
       }
 
       setPosts(allPosts);
-      setVisiblePosts(allPosts.slice(0, PAGE_SIZE)); // initialize infinite scroll
+      // setVisiblePosts(allPosts.slice(0, PAGE_SIZE)); // initialize infinite scroll
     } catch (error) {
       console.error("Failed to fetch posts:", error);
+    } finally {
+      setHasFetchedPosts(true);
     }
   };
 
-  const loadMorePosts = () => {
-    setTimeout(() => {
-      const next = posts.slice(
-        visiblePosts.length,
-        visiblePosts.length + PAGE_SIZE
-      );
-      setVisiblePosts(prev => [...prev, ...next]);
-    }, 800);
-  };
+  // const loadMorePosts = () => {
+  //   setTimeout(() => {
+  //     const next = posts.slice(
+  //       visiblePosts.length,
+  //       visiblePosts.length + PAGE_SIZE
+  //     );
+  //     setVisiblePosts(prev => [...prev, ...next]);
+  //   }, 800);
+  // };
 
   const fetchUserDetailsOfPosts = async () => {
     try {
       // const token = getCookie('token');
-      const response = await coreBackendClient.post(`${backendApiUrl}post/userProfile`);
-      const { data } = response;
-      SetUserDetails(data.data);
+      const response = await coreBackendClient.post('post/userProfile');
+      const payload = unwrapApiData(response.data);
+      const normalizedUser = Array.isArray(payload) ? payload[0] : payload;
+      SetUserDetails(normalizedUser ?? null);
     } catch (error) {
       console.error('Failed to fetch posts:', error);
     } finally {
@@ -132,7 +153,7 @@ const Feed = () => {
   // );
   const normalizedSearch = searchTerm?.toLowerCase().trim();
 
-  const filteredPosts = visiblePosts.filter(post => {
+  const filteredPosts = posts.filter(post => {
     if (!normalizedSearch) return true;
 
     const searchableValues = [
@@ -150,12 +171,44 @@ const Feed = () => {
       value.includes(normalizedSearch)
     );
   });
+  const totalPages = Math.max(1, Math.ceil(filteredPosts.length / PAGE_SIZE));
+  const paginatedPosts = filteredPosts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+
+    setCurrentPage(page);
+    setSearchParams(prevParams => {
+      const nextParams = new URLSearchParams(prevParams);
+      nextParams.set('page', String(page));
+      return nextParams;
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
 
   useEffect(() => {
     fetchPosts();
     fetchUserDetailsOfPosts();
   }, []);
+
+  useEffect(() => {
+    const pageFromUrl = getPageFromParams(searchParams);
+    if (pageFromUrl !== currentPage) {
+      setCurrentPage(pageFromUrl);
+    }
+  }, [searchParams, currentPage]);
+
+  useEffect(() => {
+    if (!hasFetchedPosts || currentPage <= totalPages) return;
+
+    setCurrentPage(totalPages);
+    setSearchParams(prevParams => {
+      const nextParams = new URLSearchParams(prevParams);
+      nextParams.set('page', String(totalPages));
+      return nextParams;
+    }, { replace: true });
+  }, [currentPage, hasFetchedPosts, totalPages, setSearchParams]);
 
   // Responsive layout adjustment
   useEffect(() => {
@@ -199,10 +252,10 @@ const Feed = () => {
         {/* Posts Grid/List */}
         <div className={
           layout === 'grid'
-            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6 "
+            ? "grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6"
             : "space-y-4"
         }>
-          {/* {filteredPosts.map((post) => (
+          {/* {paginatedPosts.map((post) => (
             <DiscoveryCard
               key={post._id}
               post={post}
@@ -211,7 +264,7 @@ const Feed = () => {
           ))
 
           } */}
-          {visiblePosts.length > 0 && <InfiniteScroll
+          {/* {visiblePosts.length > 0 && <InfiniteScroll
             dataLength={visiblePosts.length}
             next={loadMorePosts}
             hasMore={visiblePosts.length < posts.length}
@@ -223,15 +276,8 @@ const Feed = () => {
             }
             style={{ overflow: 'visible' }}
           >
-            {/* <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "20px",
-              }}
-            > */}
             <div className="grid sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6">
-              {filteredPosts.map(post => (
+              {paginatedPosts.map(post => (
                 <DiscoveryCard
                   key={post._id}
                   post={post}
@@ -239,7 +285,14 @@ const Feed = () => {
                 />
               ))}
             </div>
-          </InfiniteScroll>}
+          </InfiniteScroll>} */}
+          {paginatedPosts.map(post => (
+            <DiscoveryCard
+              key={post._id}
+              post={post}
+              layout={layout}
+            />
+          ))}
         </div>
 
         {/* Empty State */}
@@ -254,11 +307,35 @@ const Feed = () => {
           </div>
         )}
 
-        {/* Load More Button */}
-        {filteredPosts.length > 20 && (
-          <div className="text-center mt-8">
-            <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-              Load More Sites
+        {filteredPosts.length > 0 && totalPages > 1 && (
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="cursor-pointer px-4 py-2 rounded-md border border-orange-500 text-orange-500 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+
+            {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+              <button
+                key={pageNumber}
+                onClick={() => handlePageChange(pageNumber)}
+                className={`px-3 cursor-pointer py-2 rounded-md border ${currentPage === pageNumber
+                  ? 'bg-orange-500 text-white border-orange-500'
+                  : 'border-orange-500 text-orange-500'
+                  }`}
+              >
+                {pageNumber}
+              </button>
+            ))}
+
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="cursor-pointer px-4 py-2 rounded-md border border-orange-500 text-orange-500 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Next
             </button>
           </div>
         )}
