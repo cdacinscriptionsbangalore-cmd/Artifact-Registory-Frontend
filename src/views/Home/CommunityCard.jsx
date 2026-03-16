@@ -31,7 +31,7 @@ const StyledWrapper = styled.div`
     overflow: hidden;
     line-height: 1.6;
     transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
-    cursor:pointer;
+    // cursor:pointer;
   }
 
   .content {

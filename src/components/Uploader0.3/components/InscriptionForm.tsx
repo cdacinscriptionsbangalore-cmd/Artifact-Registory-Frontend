@@ -160,6 +160,30 @@ const InscriptionForm: React.FC<InscriptionFormProps> = ({
           onBlur={() => handleFieldBlur('language', formData.description.language?.join(", ") || "")}
         />
       </div>
+      <div className="flex items-center space-x-5">
+        <FormLabel
+          id="demo-radio-buttons-group-label"
+        >
+          Post anonymously:
+        </FormLabel>
+        <RadioGroup
+          aria-labelledby="demo-radio-buttons-group-label"
+          name="radio-buttons-group"
+          className="flex flex-row text-black"
+          value={postedAnonymously ? "true" : "false"}
+          onChange={(e, v) => {
+            const boolVal = v === "true";
+            setPostedAnonymously(boolVal);
+            onChange("description.postedAnonymously", boolVal);
+          }}
+          defaultValue={"false"}
+          style={{ display: "flex", flexDirection: "row", alignItems: "center" }}
+        >
+          <FormControlLabel value={"true"} control={<Radio />} label="Yes" />
+          <FormControlLabel value={"false"} control={<Radio />} label="No" />
+        </RadioGroup>
+      </div>
+
       <div>
         {/* <label className="block text-sm font-medium mb-2">Description</label>
         <textarea
@@ -221,29 +245,6 @@ const InscriptionForm: React.FC<InscriptionFormProps> = ({
         onChange={(value) => onChange("description.scriptLanguage", value.split(",").map(s => s.trim()).filter(Boolean))}
         placeholder="Devanagari, Tamil"
       /> */}
-      <div className="flex items-center space-x-5">
-        <FormLabel
-          id="demo-radio-buttons-group-label"
-        >
-          Post anonymously:
-        </FormLabel>
-        <RadioGroup
-          aria-labelledby="demo-radio-buttons-group-label"
-          name="radio-buttons-group"
-          className="flex flex-row text-black"
-          value={postedAnonymously ? "true" : "false"}
-          onChange={(e, v) => {
-            const boolVal = v === "true";
-            setPostedAnonymously(boolVal);
-            onChange("description.postedAnonymously", boolVal);
-          }}
-          defaultValue={"false"}
-          style={{ display: "flex", flexDirection: "row", alignItems: "center" }}
-        >
-          <FormControlLabel value={"true"} control={<Radio />} label="Yes" />
-          <FormControlLabel value={"false"} control={<Radio />} label="No" />
-        </RadioGroup>
-      </div>
     </div>
   );
 };

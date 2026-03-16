@@ -8,6 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 // import * from '@mui/styled-engine-sc' as styledEngineSC;,
 import { LanguageProvider } from "./context/LanguageContext";
 import CustomTranslate from "./textTranslation/CustomTranslate";
+import GoogleTranslate from "./textTranslation/GoogleTranslate";
 
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
       <AuthProvider>
         <LanguageProvider>
           <CustomTranslate />
+          {/* <GoogleTranslate/> */}
             <RouterProvider router={router} />
           {/* </CustomTranslate> */}
         </LanguageProvider>

@@ -6,6 +6,7 @@ import { Heart, MapPin, Star } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import type { Post } from "./Feed";
 import { Badge, CircularProgress } from "@mui/material";
+import AppImage from "@/components/AppImage";
 
 interface DiscoveryCardProps {
   post: Post;
@@ -37,7 +38,7 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
 
 
           <div className="w-32 h-24 sm:w-48 sm:h-32 flex-shrink-0 relative">
-            <img
+            <AppImage
               src={post.images.image[0]}
               alt={post.description.title}
               className="w-full h-full object-cover"
@@ -101,7 +102,7 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
 
       <div className="relative">
         <Badge color="error" badgeContent={`${post?.images.image.length < 10 ? post?.images.image.length || 0 : `9+`}`+`${post.images.image.length === 1? " Image":" Images"}`} className="p-2" style={{width:"100%",position:"absolute", right:"10%",top:"8%"}} />
-        {!loading ? <img
+        {!loading ? <AppImage
           src={post.images.image[0]}
           alt={post.description.title}
           className="w-full h-48 sm:h-56 object-cover"

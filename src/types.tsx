@@ -25,7 +25,10 @@ export interface UploadedImageData {
 export interface User {
   _id: string;
   name: string;
+  username?: string;
+  bio?: string;
   profileImage: string;
+  coverImage?: string;
   imagesUploaded: number;
   upvotesReceived: number;
   followers: number;

@@ -3,14 +3,18 @@ import piexifjs from "piexifjs";
 import {
   Alert,
   CircularProgress,
+  FormControlLabel,
+  FormLabel,
   MenuItem,
+  Radio,
+  RadioGroup,
   Slide,
   Snackbar,
   TextField,
   Tooltip,
   type SlideProps,
 } from "@mui/material";
-import { ArrowRight, RefreshCcw, RotateCw, Trash2 } from "lucide-react";
+import { ArrowRight, RefreshCcw, RotateCw, Trash2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
@@ -20,11 +24,14 @@ import { Header } from "../components/Header";
 import { PhotoUploadArea } from "../components/PhotoUploadArea";
 import { CameraView } from "../components/CameraView";
 import { GPSStatus } from "../components/GPSStatus";
+import SuggestionControls from "../components/SuggestionControls";
 import { useCamera } from "../hooks/UseCamera";
 import type { GeoInfo } from "../types/types";
+import { getEnvConfig } from "../config/env";
+import getCurrentLocation from "../utils/Camera/getCurrentLocation";
 import verifyGPSInImage from "../utils/GPS/verifyGPSInImage";
 
-const isOnline = true; // true => validate with AI, false => skip AI validation only
+const isOnline = false; // true => validate with AI, false => skip AI validation only
 const MAX_IMAGES = 20;
 
 interface ImageItem {
@@ -38,6 +45,7 @@ interface GroupFormData {
   description: string;
   type: string;
   topic: string;
+  postedAnonymously: boolean;
 }
 
 interface ImageGroup {
@@ -53,6 +61,7 @@ const DEFAULT_GROUP_FORM_DATA: GroupFormData = {
   description: "",
   type: "Stone",
   topic: "",
+  postedAnonymously: false,
 };
 
 function SlideDownTransition(props: SlideProps) {
@@ -164,6 +173,13 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
   const [isCheckingStone, setIsCheckingStone] = useState(false);
   const [stoneCheckResult, setStoneCheckResult] = useState<string | null>(null);
   const [nextGroupNumber, setNextGroupNumber] = useState(1);
+  const [groupSuggestions, setGroupSuggestions] = useState<Record<string, string | null>>({});
+  const [groupSuggestionLoading, setGroupSuggestionLoading] = useState<
+    Record<string, boolean>
+  >({});
+  const [groupSuggestionVisibility, setGroupSuggestionVisibility] = useState<
+    Record<string, boolean>
+  >({});
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarSeverity, setSnackbarSeverity] = useState<
@@ -248,6 +264,81 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
     setSnackbarOpen(false);
     setError(null);
     setStoneCheckResult(null);
+  };
+
+  const clearGroupSuggestionState = (groupId: string) => {
+    setGroupSuggestions((previous) => {
+      if (!(groupId in previous)) return previous;
+      const next = { ...previous };
+      delete next[groupId];
+      return next;
+    });
+    setGroupSuggestionLoading((previous) => {
+      if (!(groupId in previous)) return previous;
+      const next = { ...previous };
+      delete next[groupId];
+      return next;
+    });
+    setGroupSuggestionVisibility((previous) => {
+      if (!(groupId in previous)) return previous;
+      const next = { ...previous };
+      delete next[groupId];
+      return next;
+    });
+  };
+
+  const fetchGroupSuggestion = async (groupId: string, lat?: string, lon?: string) => {
+    setGroupSuggestions((previous) => ({ ...previous, [groupId]: null }));
+    setGroupSuggestionVisibility((previous) => ({ ...previous, [groupId]: true }));
+    setGroupSuggestionLoading((previous) => ({ ...previous, [groupId]: true }));
+
+    try {
+      let latitude = lat || geoInfo?.latitude;
+      let longitude = lon || geoInfo?.longitude;
+
+      if (!latitude || !longitude) {
+        const location = await getCurrentLocation();
+        latitude = location.latitude;
+        longitude = location.longitude;
+      }
+
+      if (!latitude || !longitude) {
+        throw new Error("No coordinates available");
+      }
+
+      const { webhookUrl } = getEnvConfig();
+      const url = `${webhookUrl}?lat=${encodeURIComponent(
+        String(latitude)
+      )}&lon=${encodeURIComponent(String(longitude))}`;
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Service returned ${response.status}`);
+      }
+
+      const outer = await response.json();
+      let text = "";
+
+      if (outer?.text) {
+        const inner = JSON.parse(outer.text);
+        text = inner?.description || "";
+      } else {
+        text = outer?.description || outer?.suggestion || "";
+      }
+
+      if (!text) {
+        throw new Error("No suggestion returned");
+      }
+
+      setGroupSuggestions((previous) => ({ ...previous, [groupId]: text }));
+    } catch {
+      setGroupSuggestions((previous) => ({
+        ...previous,
+        [groupId]: "Failed to get suggestion.",
+      }));
+    } finally {
+      setGroupSuggestionLoading((previous) => ({ ...previous, [groupId]: false }));
+    }
   };
 
   const updateGeoInfo = (exifData: any, hasGPS: boolean) => {
@@ -433,10 +524,10 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
         previous.map((image, currentIndex) =>
           currentIndex === index
             ? {
-                ...image,
-                preview: rotatedPreview,
-                file: rotatedFile,
-              }
+              ...image,
+              preview: rotatedPreview,
+              file: rotatedFile,
+            }
             : image
         )
       );
@@ -456,6 +547,9 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
     setGeoInfo(null);
     setIsCheckingStone(false);
     setStoneCheckResult(null);
+    setGroupSuggestions({});
+    setGroupSuggestionLoading({});
+    setGroupSuggestionVisibility({});
   };
 
   const handleProceedToGrouping = () => {
@@ -524,9 +618,9 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
       previous.map((group) =>
         group.id === groupId
           ? {
-              ...group,
-              images: group.images.filter((image) => !selectedSet.has(image.id)),
-            }
+            ...group,
+            images: group.images.filter((image) => !selectedSet.has(image.id)),
+          }
           : group
       )
     );
@@ -534,10 +628,10 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
     setSelectedImageIds((previous) => previous.filter((id) => !selectedSet.has(id)));
   };
 
-  const updateGroupFormData = (
+  const updateGroupFormData = <K extends keyof GroupFormData>(
     groupId: string,
-    field: keyof GroupFormData,
-    value: string
+    field: K,
+    value: GroupFormData[K]
   ) => {
     setGroups((previous) =>
       previous.map((group) =>
@@ -557,6 +651,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
 
     const imageIdsInGroup = new Set(targetGroup.images.map((image) => image.id));
     setSelectedImageIds((previous) => previous.filter((id) => !imageIdsInGroup.has(id)));
+    clearGroupSuggestionState(groupId);
   };
 
   const handleSubmitGroup = async (groupId: string) => {
@@ -606,7 +701,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                 title: group.formData.title,
                 description: group.formData.description,
                 subject: group.formData.topic,
-                postedAnonymously: false,
+                postedAnonymously: group.formData.postedAnonymously,
               },
               topic: group.formData.topic,
               script: [],
@@ -664,7 +759,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
 
         {currentStage === "upload" ? (
           <div className="w-full space-y-4">
-            {hasGeoData !== null && <GPSStatus hasGeoData={hasGeoData} geoInfo={geoInfo} />}
+            {/* {hasGeoData !== null && <GPSStatus hasGeoData={hasGeoData} geoInfo={geoInfo} />} */}
 
             {isCapturing ? (
               <CameraView
@@ -787,15 +882,26 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                   </div>
                 )}
               </div>
+              <div className="flex gap-2">
 
-              <button
-                type="button"
-                onClick={createGroupFromSelected}
-                disabled={selectedUngroupedCount === 0}
-                className="mt-4 w-full sm:w-auto px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                Create Group From Selected
-              </button>
+                <button
+                  type="button"
+                  onClick={createGroupFromSelected}
+                  disabled={selectedUngroupedCount === 0}
+                  className="mt-4 w-full sm:w-auto px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Create Group From Selected
+                </button>
+                <button
+                  type="button"
+                  onClick={resetUploaderFlow}
+                  className="mt-4 gap-2 cursor-pointer w-full sm:w-auto px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition flex items-center justify-center "
+                >
+                  <RefreshCcw size={18} />
+                  Reset
+                </button>
+              </div>
+
             </section>
 
             <section className="space-y-4">
@@ -811,6 +917,9 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                     selectedImageIds.includes(image.id)
                   ).length;
                   const disableEdits = isSubmitted || isSubmitting;
+                  const suggestion = groupSuggestions[group.id] || null;
+                  const isFetchingSuggestion = groupSuggestionLoading[group.id] || false;
+                  const showSuggestion = groupSuggestionVisibility[group.id] !== false;
 
                   return (
                     <article key={group.id} className="bg-white border border-gray-300 rounded-lg p-4">
@@ -893,21 +1002,91 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                           <MenuItem value="Metal">Metal</MenuItem>
                           <MenuItem value="Clay">Clay</MenuItem>
                         </TextField>
-                        <TextField
-                          label="Description"
-                          size="small"
-                          value={group.formData.description}
-                          onChange={(event) =>
-                            updateGroupFormData(group.id, "description", event.target.value)
-                          }
-                          disabled={disableEdits}
-                          multiline
-                          minRows={3}
-                          fullWidth
-                        />
+                        <div className=" flex items-center space-x-5 text-black">
+                          <FormLabel id={`${group.id}-post-anonymously-label`}>
+                            Post anonymously:
+                          </FormLabel>
+                          <RadioGroup
+                            aria-labelledby={`${group.id}-post-anonymously-label`}
+                            name={`${group.id}-post-anonymously`}
+                            className="flex flex-row"
+                            value={group.formData.postedAnonymously ? "true" : "false"}
+                            onChange={(_event, value) =>
+                              updateGroupFormData(group.id, "postedAnonymously", value === "true")
+                            }
+                            style={{ display: "flex", flexDirection: "row", alignItems: "center" }}
+                          >
+                            <FormControlLabel
+                              value="true"
+                              control={<Radio />}
+                              label="Yes"
+                              disabled={disableEdits}
+                            />
+                            <FormControlLabel
+                              value="false"
+                              control={<Radio />}
+                              label="No"
+                              disabled={disableEdits}
+                            />
+                          </RadioGroup>
+                        </div>
                       </div>
 
-                      <div className="mt-4 flex flex-wrap gap-3 items-center">
+                      {!disableEdits && (
+                        <div className="mt-3">
+                          <TextField
+                            label="Description"
+                            size="small"
+                            value={group.formData.description}
+                            onChange={(event) =>
+                              updateGroupFormData(group.id, "description", event.target.value)
+                            }
+                            disabled={disableEdits}
+                            multiline
+                            minRows={3}
+                            fullWidth
+                          />
+
+                          <SuggestionControls
+                            isFetching={isFetchingSuggestion}
+                            onFetch={() => fetchGroupSuggestion(group.id)}
+                            geoInfo={geoInfo}
+                            suggestion={suggestion}
+                            onUseSuggestion={(text) => {
+                              updateGroupFormData(group.id, "description", text);
+                              setGroupSuggestionVisibility((previous) => ({
+                                ...previous,
+                                [group.id]: false,
+                              }));
+                            }}
+                          />
+
+                          {suggestion && showSuggestion && (
+                            <div className="mt-3 p-3 border border-gray-300 hover:border-black rounded-sm text-sm text-black">
+                              <div className="flex justify-between items-start">
+                                <strong className="text-xs text-black">Suggested description</strong>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setGroupSuggestionVisibility((previous) => ({
+                                      ...previous,
+                                      [group.id]: false,
+                                    }))
+                                  }
+                                  className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
+                                  aria-label="Close suggestion"
+                                >
+                                  <X size={18} />
+                                </button>
+                              </div>
+                              <p className="mt-2 whitespace-pre-wrap text-xs">{suggestion}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+
+                      <div className="mt-4 flex flex-wrap align-center justify-center gap-7">
                         <button
                           type="button"
                           onClick={() => handleSubmitGroup(group.id)}

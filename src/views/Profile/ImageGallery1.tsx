@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Heart, Star } from "lucide-react";
 import type { Post } from "@/types";
 import { NavLink } from "react-router-dom";
+import AppImage from "@/components/AppImage";
 
 interface ImageGalleryProps {
   posts: Post[];
@@ -30,7 +31,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ posts }) => {
             <NavLink to={`https://inscriptions.cdacb.in/feed/${post._id}`} key={post._id} className="cursor-pointer border-1 border-gray-300 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors">
               <div key={post._id} className="relative group cursor-pointer">
                 <div className="aspect-square bg-secondary-background rounded-lg overflow-hidden">
-                  <img
+                  <AppImage
                     src={post.images.image[0]}
                     alt={post.description.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"

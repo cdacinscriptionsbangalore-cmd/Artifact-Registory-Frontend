@@ -55,7 +55,7 @@ const StyledWrapper = styled.div`
     overflow: visible;
     width: 380px;
     height: 250px;
-    cursor: pointer;
+    // cursor: pointer;
   }
 
   .content {

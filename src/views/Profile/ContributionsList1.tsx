@@ -1,6 +1,7 @@
 import { ThumbsUp } from "lucide-react";
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
+import AppImage from "@/components/AppImage";
 
 export interface Comment {
     _id: string;
@@ -76,7 +77,7 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ comments }) => {
 
                             <div className="flex gap-4 flex-1">
 
-                                <img
+                                <AppImage
                                     src={post.postImageUrl || ""}
                                     alt={post.description}
                                     className="w-16 h-16 rounded-lg object-cover flex-shrink-0"

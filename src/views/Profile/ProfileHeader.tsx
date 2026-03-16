@@ -1,12 +1,38 @@
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { User } from "@/types";
-import { Share, SquarePen } from "lucide-react";
-// import profileImg from "@assets/user/profile.png";
+import { SquarePen } from "lucide-react";
 import coverPhoto from "@assets/banner111.jpg"
 import { Snackbar, Alert, Slide } from "@mui/material";
 import EditProfileModal from "./EditProfileModal";
 import ShareProfileModal from "./ShareProfileModal";
+
+const backendApiUrl =
+  window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
+
+const normalizeUserImageUrl = (rawUrl?: string | null): string => {
+  if (!rawUrl) return "";
+
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return "";
+
+  if (trimmed.startsWith("data:") || trimmed.startsWith("blob:")) {
+    return trimmed;
+  }
+
+  const match = trimmed.match(/\/user\/public\/images\/([^/?#]+)/);
+  if (match?.[1] && backendApiUrl) {
+    const imageId = match[1];
+    try {
+      return new URL(`user/public/images/${imageId}`, backendApiUrl).toString();
+    } catch {
+      return `${backendApiUrl.replace(/\/+$/, "")}/user/public/images/${imageId}`;
+    }
+  }
+
+  return trimmed;
+};
+
 interface ProfileHeaderProps {
   user: User;
 }
@@ -17,8 +43,25 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
-  const [profileName, setProfileName] = useState("");
-  const [bio, setBio] = useState("Archaeology enthusiast & digital volunteer");
+  const [profileName, setProfileName] = useState(user?.name || "");
+  const [bio, setBio] = useState(user?.bio || "Archaeology enthusiast & digital volunteer");
+  const [profileImage, setProfileImage] = useState(normalizeUserImageUrl(user?.profileImage));
+  const [coverImage, setCoverImage] = useState(normalizeUserImageUrl(user?.coverImage));
+
+  useEffect(() => {
+    setProfileName(user?.name || "");
+    setBio(user?.bio || "Archaeology enthusiast & digital volunteer");
+    setProfileImage(normalizeUserImageUrl(user?.profileImage));
+    setCoverImage(normalizeUserImageUrl(user?.coverImage));
+  }, [user]);
+
+  const handleSetProfileImage = (imageUrl: string) => {
+    setProfileImage(normalizeUserImageUrl(imageUrl));
+  };
+
+  const handleSetCoverImage = (imageUrl: string) => {
+    setCoverImage(normalizeUserImageUrl(imageUrl));
+  };
 
   const handleOpenModal = () => setDisplayModal(true);
   const handleCloseModal = () => setDisplayModal(false);
@@ -52,14 +95,16 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
   };
 
   return (
-    <div className="rounded-lg pt-6 pb-6 mb-50 border-1 border-slate-800/50 min-h-[200px] md:min-h-[400px] bg-center bg-fill md:bg-cover bg-no-repeat" style={{ background: `url(${coverPhoto})`, position: "relative", backgroundSize: "cover", backgroundPosition: "center" }}>
+    <div className="rounded-lg pt-6 pb-6 mb-50 border-1 border-slate-800/50 min-h-[200px] md:min-h-[400px] bg-center bg-fill md:bg-cover bg-no-repeat" style={{ background: `url(${coverImage || coverPhoto})`, position: "relative", backgroundSize: "cover", backgroundPosition: "center" }}>
       <EditProfileModal
-        userName={user.name}
+        userName={profileName || user.name}
         display={displayModal}
         onClose={handleCloseModal}
         onEditSuccess={handleEditSuccess}
         onEditError={handleEditError}
         setProfileName={setProfileName}
+        setProfileImage={handleSetProfileImage}
+        setCoverImage={handleSetCoverImage}
         bio={bio}
         setBio={setBio}
       />
@@ -78,26 +123,22 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
       </Snackbar>
       <div className="flex flex-col items-center" style={{ position: "absolute", bottom: 0, left: "50%", transform: "translate(-50%, 78%)", backgroundColor: "none" }}>
         <div className="relative">
-          {/* only the first leter of the name */}
-          <div className="w-20 h-20 rounded-full border-2 border-orange-500 bg-gray-600 flex items-center justify-center text-3xl font-bold text-white">
-            {/* {profileName.trim.length >= 1 ? profileName.charAt(0).toUpperCase()+"asd" : user.name ? user.name.charAt(0).toUpperCase() : 'U'} */}
-            {getInitials(user.name)}
-          </div>
-          {/* <img 
-            src={user.profileImage} 
-            alt={user.name}
-            className="w-20 h-20 rounded-full border-2 border-orange-500"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = profileImg;
-            }}
-          /> */}
-          {/* <div className="absolute font-bold -bottom-1 -right-1 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
-            6
-          </div> */}
+          {profileImage ? (
+            <img
+              src={profileImage}
+              alt={profileName || user.name || "Profile Image"}
+              className="w-20 h-20 rounded-full border-2 border-orange-500 object-cover"
+              onError={() => setProfileImage("")}
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full border-2 border-orange-500 bg-gray-600 flex items-center justify-center text-3xl font-bold text-white">
+              {getInitials(profileName || user.name)}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 sm:text-center mt-4 w-100 text-center">
-          <h1 className="text-2xl font-bold text-black mb-2 capitalize">{user.name}</h1>
+          <h1 className="text-2xl font-bold text-black mb-2 capitalize">{profileName || user.name}</h1>
           <p className="text-black mb-4">{bio}</p>
 
           <div className="flex gap-2 justify-center sm:justify-center">
