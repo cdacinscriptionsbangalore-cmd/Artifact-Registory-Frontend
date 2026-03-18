@@ -1,38 +1,58 @@
-.image-gallery-slide img {
-    border-radius: 10px !important;
-    object-fit: contain;
-    
+.custom-image-gallery .image-gallery-slide img {
+  border-radius: 10px !important;
+  object-fit: contain;
 }
 
-.image-gallery-slide .image-gallery-image{
-    width: 100%;
-    min-height: 8rem!important;
-    object-fit: contain;
-    overflow: hidden;
+.custom-image-gallery .image-gallery-slide .image-gallery-image {
+  width: 100%;
+  min-height: 8rem !important;
+  object-fit: contain;
+  overflow: hidden;
 }
-/* Fullscreen mode: display images in their original size */
-/* .custom-image-gallery .image-gallery-fullscreen img {
-    object-fit: contain;
-    width: auto;
-    height: auto;
-} */
 
-/* Force equal thumbnail boxes */
-.image-gallery-thumbnail {
-  width: 110px;        /* choose your size */
-  height: 90px;        /* fixed height */
+.custom-image-gallery.image-gallery.fullscreen-modal .image-gallery-content {
+  top: 0 !important;
+  transform: none !important;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.custom-image-gallery.image-gallery.fullscreen-modal .image-gallery-slide-wrapper {
+  flex: 1;
+  min-height: 0;
+}
+
+.custom-image-gallery.image-gallery.fullscreen-modal .image-gallery-slides,
+.custom-image-gallery.image-gallery.fullscreen-modal .image-gallery-slide,
+.custom-image-gallery.image-gallery.fullscreen-modal .image-gallery-slide .image-gallery-image {
+  height: 100%;
+}
+
+.custom-image-gallery.image-gallery.fullscreen-modal .image-gallery-slide .image-gallery-image {
+  max-height: none !important;
+  width: 100% !important;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+}
+
+.custom-image-gallery.image-gallery.fullscreen-modal .image-gallery-thumbnails-wrapper {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.custom-image-gallery .image-gallery-thumbnail {
+  width: 110px;
+  height: 90px;
   overflow: hidden;
   padding: 0;
 }
 
-/* Force image to fill box */
-.image-gallery-thumbnail img {
+.custom-image-gallery .image-gallery-thumbnail img {
   width: 100%;
   height: 100%;
-  object-fit: cover;   /* crops instead of stretching */
+  object-fit: cover;
 }
 
-/* Optional: remove default spacing */
-.image-gallery-thumbnails-container {
+.custom-image-gallery .image-gallery-thumbnails-container {
   gap: 8px;
 }

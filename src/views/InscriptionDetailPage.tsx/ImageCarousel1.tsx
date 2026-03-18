@@ -13,8 +13,9 @@ interface ImageCarouselProps {
 const ImageCarousel: React.FC<ImageCarouselProps> = ({
     images = [],
     alt = "",
-    className = "w-full h-64 sm:h-80 md:h-96",
+    className = "w-full h-[20rem] sm:h-[24rem] md:h-[30rem]",
 }) => {
+    const [isFullscreen, setIsFullscreen] = React.useState(false);
     const safeImages = images.length > 0 ? images : [""];
 
     const galleryItems = safeImages.map((image) => ({
@@ -23,12 +24,16 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
         description: alt,
     }));
 
+    const itemContainerClass = isFullscreen
+        ? "m-1 w-screen h-[calc(100vh-12rem)] sm:h-[calc(100vh-7rem)]"
+        : className;
+
     const renderItem = (item: any) => (
-        <div className={className}>
+        <div className={itemContainerClass}>
             <AppImage
                 src={item.original}
                 alt={item.description || alt || "Inscription image"}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
             />
         </div>
     );
@@ -42,9 +47,10 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
     );
 
     return (
-        <div className="mb-5">
+        <div className="mb-5 border-1 rounded-lg overflow-hidden border-gray-300 p-1">
             <ImageGallery
                 items={galleryItems}
+                additionalClass="custom-image-gallery"
                 renderItem={renderItem}
                 renderThumbInner={renderThumbInner}
                 showThumbnails={true}
@@ -52,6 +58,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
                 showPlayButton={false}
                 showBullets={true}
                 useBrowserFullscreen={true}
+                onScreenChange={(fullScreen) => setIsFullscreen(Boolean(fullScreen))}
                 // thumbnailPosition={"left"}
                 // showPlayButton={true}
             />

@@ -20,11 +20,11 @@ interface EditProfileModalProps {
 }
 
 /**
- * Backend function to update user profile (name/bio)
+ * Backend function to update user profile (username/bio)
  * @param payload - The profile fields to update
  * @returns Promise with the response from backend
  */
-const updateProfile = async (payload: { name?: string; bio?: string }): Promise<any> => {
+const updateProfile = async (payload: { username?: string; bio?: string }): Promise<any> => {
     try {
         const response = await coreBackendClient.post("user/updateProfile", payload);
 
@@ -93,8 +93,10 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Display name allows letters, numbers, spaces, hyphen, and dot
-    const allowedRegex = /^[a-zA-Z0-9\s\-\.]+$/;
+    // Backend username rules: letters, numbers, and underscores only
+    const usernameRegex = /^[a-zA-Z0-9_ ]+$/;
+    // Backend bio rules: letters, numbers, and spaces only
+    const bioRegex = /^(?=.*[A-Za-z0-9])[A-Za-z0-9 ]+$/;
 
     useEffect(() => {
         if (display) {
@@ -107,34 +109,34 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         }
     }, [display, userName, bio]);
 
-    const validateFieldValue = (value: string) => {
+    const validateUsername = (value: string) => {
         const v = (value || "").trim();
         if (v.length < 3) return "Minimum 3 characters required.";
-        if (v.length > 50) return "Maximum 50 characters allowed.";
-        if (!allowedRegex.test(v)) return "Only letters, numbers, spaces, hyphen and dot are allowed.";
+        if (v.length > 30) return "Maximum 30 characters allowed.";
+        if (!usernameRegex.test(v)) return "Only letters, numbers, and underscores are allowed.";
         return "";
     };
 
     const handleInputChange = (value: string) => {
         // enforce max length at input time
-        if (value.length > 50) {
-            setErrorMsg("Maximum 50 characters allowed.");
-            setInputValue(value.slice(0, 50));
+        if (value.length > 30) {
+            setErrorMsg("Maximum 30 characters allowed.");
+            setInputValue(value.slice(0, 30));
             return;
         }
         setInputValue(value);
 
         // Clear error if valid
-        const msg = validateFieldValue(value);
+        const msg = validateUsername(value);
         if (!msg && errorMsg) {
             setErrorMsg("");
         }
     };
 
     const handleBioInputChange = (value: string) => {
-        if (value.length > 50) {
-            setBioErrorMsg("Maximum 50 characters allowed.");
-            setBioInput(value.slice(0, 50));
+        if (value.length > 150) {
+            setBioErrorMsg("Maximum 150 characters allowed.");
+            setBioInput(value.slice(0, 150));
             return;
         }
 
@@ -149,7 +151,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         const currentName = (userName || "").trim();
         const currentBio = (bio || DEFAULT_BIO).trim();
         const normalizedBio = (bioInput || "").trim();
-        const bioToSave = normalizedBio || DEFAULT_BIO;
+        const bioToSave = normalizedBio;
         const isNameChanged = trimmed !== currentName;
         const isBioChanged = bioToSave !== currentBio;
         const hasImageChanges = !!profileImageFile || !!coverImageFile;
@@ -160,7 +162,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         }
 
         if (isNameChanged) {
-            const msg = validateFieldValue(trimmed);
+            const msg = validateUsername(trimmed);
             if (msg) {
                 setErrorMsg(msg);
                 onEditError(msg);
@@ -168,11 +170,20 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             }
         }
 
-        if (bioToSave.length > 50) {
-            const msg = "Bio must be at most 50 characters.";
-            setBioErrorMsg(msg);
-            onEditError(msg);
-            return;
+        if (isBioChanged) {
+            if (bioToSave.length < 3 || bioToSave.length > 150) {
+                const msg = "Bio must be between 3 and 150 characters.";
+                setBioErrorMsg(msg);
+                onEditError(msg);
+                return;
+            }
+
+            if (!bioRegex.test(bioToSave)) {
+                const msg = "Bio can only contain letters, numbers, and spaces.";
+                setBioErrorMsg(msg);
+                onEditError(msg);
+                return;
+            }
         }
 
         try {
@@ -182,14 +193,14 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             let updatedBio = currentBio;
 
             if (isNameChanged || isBioChanged) {
-                const requestBody: { name?: string; bio?: string } = {};
-                if (isNameChanged) requestBody.name = trimmed;
+                const requestBody: { username?: string; bio?: string } = {};
+                if (isNameChanged) requestBody.username = trimmed;
                 if (isBioChanged) requestBody.bio = bioToSave;
 
                 console.log("Updating profile", requestBody);
                 const response = await updateProfile(requestBody);
                 latestUserData = extractUserData(response);
-                updatedName = latestUserData?.name ?? trimmed;
+                updatedName = latestUserData?.username ?? trimmed;
                 updatedBio = latestUserData?.bio ?? bioToSave;
                 setProfileName(updatedName);
                 setBio(updatedBio);
@@ -212,9 +223,12 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             }
 
             if ((!isNameChanged || !isBioChanged) && latestUserData) {
-                if (!isNameChanged && latestUserData?.name) {
-                    setProfileName(latestUserData.name);
-                    updatedName = latestUserData.name;
+                if (!isNameChanged && (latestUserData?.username || latestUserData?.name)) {
+                    const fallbackUsername = latestUserData?.username ?? latestUserData?.name;
+                    if (fallbackUsername) {
+                        setProfileName(fallbackUsername);
+                        updatedName = fallbackUsername;
+                    }
                 }
                 if (!isBioChanged && latestUserData?.bio) {
                     setBio(latestUserData.bio);
@@ -224,7 +238,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
             onEditSuccess("Profile updated successfully!");
             setInputValue(updatedName || "");
-            setBioInput(updatedBio || DEFAULT_BIO);
+            setBioInput(updatedBio || "");
             setErrorMsg("");
             setBioErrorMsg("");
             setProfileImageFile(null);
@@ -289,7 +303,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                                 onChange={(e) => handleInputChange(e.target.value)}
                                 fullWidth
                                 error={!!errorMsg}
-                                helperText={errorMsg || `${inputValue.length}/50`}
+                                helperText={errorMsg || `${inputValue.length}/30`}
                                 FormHelperTextProps={{ style: { color: errorMsg ? "#d32f2f" : "inherit", margin: 0, textTransform: "capitalize" } }}
                                 sx={{
                                     marginBottom: 2,
@@ -316,7 +330,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                                 onChange={(e) => handleBioInputChange(e.target.value)}
                                 fullWidth
                                 error={!!bioErrorMsg}
-                                helperText={bioErrorMsg || `${bioInput.length}/50`}
+                                helperText={bioErrorMsg || `${bioInput.length}/150`}
                                 FormHelperTextProps={{ style: { color: bioErrorMsg ? "#d32f2f" : "inherit", margin: 0 } }}
                                 sx={{
                                     "& .MuiOutlinedInput-root": {
@@ -380,7 +394,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                                     // prompt user if there's unsaved input
                                     const hasNameDraft = (inputValue || "").trim() !== (userName || "").trim();
                                     const currentBio = (bio || DEFAULT_BIO).trim();
-                                    const draftBio = ((bioInput || "").trim() || DEFAULT_BIO);
+                                    const draftBio = (bioInput || "").trim();
                                     const hasBioDraft = draftBio !== currentBio;
                                     const hasFileDraft = !!profileImageFile || !!coverImageFile;
                                     if (hasNameDraft || hasBioDraft || hasFileDraft) {
@@ -389,7 +403,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                                     }
                                     setInputValue(userName || "");
                                     setErrorMsg("");
-                                    setBioInput(bio || DEFAULT_BIO);
+                                    setBioInput(bio || "");
                                     setBioErrorMsg("");
                                     setProfileImageFile(null);
                                     setCoverImageFile(null);

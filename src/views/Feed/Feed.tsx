@@ -24,6 +24,26 @@ const unwrapApiData = (payload: unknown): any => {
   return payload;
 };
 
+const toTimestamp = (value: unknown): number => {
+  if (!value) return 0;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+const getPostCreatedTimestamp = (post: any): number => {
+  return (
+    toTimestamp(post?.createdAt) ||
+    toTimestamp(post?.description?.createdAt) ||
+    toTimestamp(post?.updatedAt) ||
+    toTimestamp(post?.description?.updatedAt)
+  );
+};
+
 export interface Post {
   _id: string;
   description: {
@@ -108,7 +128,10 @@ const Feed = () => {
             : [];
       }
 
-      setPosts(allPosts);
+      const latestFirstPosts = [...allPosts].sort(
+        (a, b) => getPostCreatedTimestamp(b) - getPostCreatedTimestamp(a)
+      );
+      setPosts(latestFirstPosts);
       // setVisiblePosts(allPosts.slice(0, PAGE_SIZE)); // initialize infinite scroll
     } catch (error) {
       console.error("Failed to fetch posts:", error);

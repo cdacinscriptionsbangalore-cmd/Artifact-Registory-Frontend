@@ -124,6 +124,19 @@ const resolveApiMessage = (body: any, payload: any, fallback: string): string =>
     return fallback;
 };
 
+const toStringArray = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => (typeof item === "string" ? item.trim() : String(item ?? "").trim()))
+            .filter(Boolean);
+    }
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed ? [trimmed] : [];
+    }
+    return [];
+};
+
 const toVoteUserIds = (rawVote: unknown): string[] => {
     if (!Array.isArray(rawVote)) return [];
 
@@ -535,6 +548,12 @@ const InscriptionDetailsPage: React.FC = () => {
         }
         return "Stone";
     };
+    const normalizedScriptValues = toStringArray(
+        postToRender?.description?.scriptLanguage?.length
+            ? postToRender.description.scriptLanguage
+            : postToRender?.script
+    );
+    const normalizedLanguageValues = toStringArray(postToRender?.description?.language);
 
     const handleOpenEditPostModal = () => {
         setEditPostForm({
@@ -584,11 +603,11 @@ const InscriptionDetailsPage: React.FC = () => {
                     title: trimmedTitle,
                     subject: trimmedTopic,
                     description: trimmedDescription,
-                    scriptLanguage: postToRender?.description?.scriptLanguage ?? [],
-                    language: postToRender?.description?.language ?? [],
+                    scriptLanguage: normalizedScriptValues,
+                    language: normalizedLanguageValues,
                 },
                 topic: trimmedTopic,
-                script: postToRender?.script ?? [],
+                script: normalizedScriptValues,
                 type: normalizedType,
                 visiblity: true,
             };
@@ -679,6 +698,15 @@ const InscriptionDetailsPage: React.FC = () => {
                         >
                             <h4 className="text-lg font-semibold text-gray-900 mb-4">Edit</h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    {postToRender.images.thumbnailImage && postToRender.images.thumbnailImage.length > 0 ? (
+                                        <img
+                                            src={postToRender.images.thumbnailImage[0]}
+                                            alt="Thumbnail"
+                                            className="w-full h-full object-cover rounded-lg"
+                                        />
+                                    ) : null}
+                                </div>
                                 <TextField
                                     label="Title"
                                     size="small"
@@ -787,7 +815,7 @@ const InscriptionDetailsPage: React.FC = () => {
                 <ImageCarousel
                     images={[placeholderImage1, placeholderImage2, placeholderImage3, placeholderImage4]}
                 /> */}
-                <div className="w-full md:w-3/5 lg:w-3/5 ">
+                <div className="w-full md:w-3/5 lg:w-3/5">
 
                     {/* <ImageCarousel1
                         images={Array.isArray(post.images.image) ? post.images.image : [placeholderImage1]}
@@ -899,9 +927,9 @@ const InscriptionDetailsPage: React.FC = () => {
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                                             <div className="flex items-center gap-2 cursor-pointer">
                                                 <Languages className="w-4 h-4" />
-                                                {postToRender.description.scriptLanguage && Array.isArray(postToRender.description.scriptLanguage) ? (
+                                                {normalizedScriptValues.length > 0 ? (
                                                     (() => {
-                                                        const joined = postToRender.description.scriptLanguage.join(', ');
+                                                        const joined = normalizedScriptValues.join(', ');
                                                         return joined.length < 20 ? (
                                                             <span>Script: {joined.charAt(0).toUpperCase() + joined.slice(1)}</span>
                                                         ) : (
@@ -917,9 +945,9 @@ const InscriptionDetailsPage: React.FC = () => {
                                             </div>
                                             <div className="flex items-center gap-2 cursor-pointer">
                                                 <BookOpen className="w-4 h-4" />
-                                                {postToRender.description.language && Array.isArray(postToRender.description.language) ? (
+                                                {normalizedLanguageValues.length > 0 ? (
                                                     (() => {
-                                                        const joined = postToRender.description.language.join(', ');
+                                                        const joined = normalizedLanguageValues.join(', ');
                                                         return joined.length < 20 ? (
                                                             <span>Language: {joined.charAt(0).toUpperCase() + joined.slice(1)}</span>
                                                         ) : (

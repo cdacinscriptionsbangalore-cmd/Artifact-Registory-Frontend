@@ -43,13 +43,13 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
-  const [profileName, setProfileName] = useState(user?.name || "");
+  const [profileName, setProfileName] = useState(user?.username || user?.name || "");
   const [bio, setBio] = useState(user?.bio || "Archaeology enthusiast & digital volunteer");
   const [profileImage, setProfileImage] = useState(normalizeUserImageUrl(user?.profileImage));
   const [coverImage, setCoverImage] = useState(normalizeUserImageUrl(user?.coverImage));
 
   useEffect(() => {
-    setProfileName(user?.name || "");
+    setProfileName(user?.username || user?.name || "");
     setBio(user?.bio || "Archaeology enthusiast & digital volunteer");
     setProfileImage(normalizeUserImageUrl(user?.profileImage));
     setCoverImage(normalizeUserImageUrl(user?.coverImage));
@@ -97,7 +97,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
   return (
     <div className="rounded-lg pt-6 pb-6 mb-50 border-1 border-slate-800/50 min-h-[200px] md:min-h-[400px] bg-center bg-fill md:bg-cover bg-no-repeat" style={{ background: `url(${coverImage || coverPhoto})`, position: "relative", backgroundSize: "cover", backgroundPosition: "center" }}>
       <EditProfileModal
-        userName={profileName || user.name}
+        userName={profileName || user.username || user.name}
         display={displayModal}
         onClose={handleCloseModal}
         onEditSuccess={handleEditSuccess}
@@ -126,19 +126,19 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
           {profileImage ? (
             <img
               src={profileImage}
-              alt={profileName || user.name || "Profile Image"}
+              alt={profileName || user.username || user.name || "Profile Image"}
               className="w-20 h-20 rounded-full border-2 border-orange-500 object-cover"
               onError={() => setProfileImage("")}
             />
           ) : (
             <div className="w-20 h-20 rounded-full border-2 border-orange-500 bg-gray-600 flex items-center justify-center text-3xl font-bold text-white">
-              {getInitials(profileName || user.name)}
+              {getInitials(profileName || user.username || user.name)}
             </div>
           )}
         </div>
 
         <div className="flex-1 sm:text-center mt-4 w-100 text-center">
-          <h1 className="text-2xl font-bold text-black mb-2 capitalize">{profileName || user.name}</h1>
+          <h1 className="text-2xl font-bold text-black mb-2 capitalize">{profileName || user.username || user.name}</h1>
           <p className="text-black mb-4">{bio}</p>
 
           <div className="flex gap-2 justify-center sm:justify-center">
