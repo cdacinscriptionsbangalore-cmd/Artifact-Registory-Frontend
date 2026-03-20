@@ -1,8 +1,9 @@
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { TextField } from "@mui/material";
 import { AnimatePresence, motion } from "framer-motion";
 import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
+import AuthContext from "@/context/AuthContext";
 
 const DEFAULT_BIO = "Archaeology enthusiast & digital volunteer";
 
@@ -84,6 +85,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     bio,
     setBio,
 }) => {
+    const { isAuthenticated } = useContext(AuthContext);
 
     const [inputValue, setInputValue] = useState(userName || "");
     const [errorMsg, setErrorMsg] = useState<string>("");
@@ -147,6 +149,12 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     };
 
     const handleEditProfile = async () => {
+        if (!isAuthenticated) {
+            onEditError("Your session has expired. Please log in again.");
+            onClose();
+            return;
+        }
+
         const trimmed = (inputValue || "").trim();
         const currentName = (userName || "").trim();
         const currentBio = (bio || DEFAULT_BIO).trim();

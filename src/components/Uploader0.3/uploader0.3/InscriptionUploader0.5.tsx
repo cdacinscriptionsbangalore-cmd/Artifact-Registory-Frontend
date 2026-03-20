@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import piexifjs from "piexifjs";
 import {
   Alert,
   CircularProgress,
@@ -23,7 +22,7 @@ import { detectAIClient } from "@/utils/http/clients/detectAIClient";
 import { Header } from "../components/Header";
 import { PhotoUploadArea } from "../components/PhotoUploadArea";
 import { CameraView } from "../components/CameraView";
-import { GPSStatus } from "../components/GPSStatus";
+// import { GPSStatus } from "../components/GPSStatus";
 import SuggestionControls from "../components/SuggestionControls";
 import { useCamera } from "../hooks/UseCamera";
 import type { GeoInfo } from "../types/types";
@@ -31,8 +30,8 @@ import { getEnvConfig } from "../config/env";
 import getCurrentLocation from "../utils/Camera/getCurrentLocation";
 import verifyGPSInImage from "../utils/GPS/verifyGPSInImage";
 
-const isOnline = false; // true => validate with AI, false => skip AI validation only
-const MAX_IMAGES = 20;
+const isOnline = true; // true => validate with AI, false => skip AI validation only
+const MAX_IMAGES = 16;
 
 interface ImageItem {
   id: string;
@@ -73,6 +72,26 @@ const parseCommaSeparatedInput = (value: string) =>
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+
+const normalizeCoordinate = (value: unknown): string | null => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value.toString() : null;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const normalized = trimmed.includes(",") && !trimmed.includes(".")
+      ? trimmed.replace(",", ".")
+      : trimmed;
+
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed.toString() : null;
+  }
+
+  return null;
+};
 
 function SlideDownTransition(props: SlideProps) {
   return <Slide {...props} direction="down" />;
@@ -305,21 +324,25 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
     try {
       let latitude = lat || geoInfo?.latitude;
       let longitude = lon || geoInfo?.longitude;
+      let normalizedLatitude = normalizeCoordinate(latitude);
+      let normalizedLongitude = normalizeCoordinate(longitude);
 
-      if (!latitude || !longitude) {
+      if (!normalizedLatitude || !normalizedLongitude) {
         const location = await getCurrentLocation();
         latitude = location.latitude;
         longitude = location.longitude;
+        normalizedLatitude = normalizeCoordinate(latitude);
+        normalizedLongitude = normalizeCoordinate(longitude);
       }
 
-      if (!latitude || !longitude) {
+      if (!normalizedLatitude || !normalizedLongitude) {
         throw new Error("No coordinates available");
       }
 
       const { webhookUrl } = getEnvConfig();
       const url = `${webhookUrl}?lat=${encodeURIComponent(
-        String(latitude)
-      )}&lon=${encodeURIComponent(String(longitude))}`;
+        normalizedLatitude
+      )}&lon=${encodeURIComponent(normalizedLongitude)}`;
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -349,23 +372,6 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
     } finally {
       setGroupSuggestionLoading((previous) => ({ ...previous, [groupId]: false }));
     }
-  };
-
-  const updateGeoInfo = (exifData: any, hasGPS: boolean) => {
-    if (hasGPS && exifData?.GPS) {
-      const coordinates = {
-        latitude: exifData.GPS[piexifjs.GPSIFD.GPSLatitude],
-        longitude: exifData.GPS[piexifjs.GPSIFD.GPSLongitude],
-        timestamp: exifData.GPS[piexifjs.GPSIFD.GPSTimeStamp],
-      };
-
-      setHasGeoData(true);
-      setGeoInfo({ ...coordinates, hasGPS: true });
-      return;
-    }
-
-    setHasGeoData(false);
-    setGeoInfo(null);
   };
 
   const checkStone = async (imageDataUrl: string): Promise<boolean> => {
@@ -473,6 +479,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
 
     const pendingImages: ImageItem[] = [];
     const messages: string[] = [];
+    let gpsCoordinateFromBatch: { latitude: string; longitude: string } | null = null;
 
     for (const file of Array.from(files)) {
       if (totalImages + pendingImages.length >= MAX_IMAGES) {
@@ -489,9 +496,12 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
         }
 
         const gpsResult = verifyGPSInImage(preview);
-        updateGeoInfo(gpsResult.allExif, gpsResult.hasGPS);
+        const gpsLatitude = normalizeCoordinate(gpsResult.coordinates?.lat);
+        const gpsLongitude = normalizeCoordinate(gpsResult.coordinates?.lon);
 
-        if (!gpsResult.hasGPS) {
+        if (gpsLatitude && gpsLongitude) {
+          gpsCoordinateFromBatch = { latitude: gpsLatitude, longitude: gpsLongitude };
+        } else {
           messages.push(`${file.name}: no GPS data found`);
         }
 
@@ -507,6 +517,26 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
 
     if (pendingImages.length > 0) {
       addImagesToUngrouped(pendingImages);
+    }
+
+    if (gpsCoordinateFromBatch) {
+      setHasGeoData(true);
+      setGeoInfo((previous) => {
+        if (previous?.latitude && previous?.longitude) {
+          return previous;
+        }
+
+        return {
+          hasGPS: true,
+          latitude: gpsCoordinateFromBatch.latitude,
+          longitude: gpsCoordinateFromBatch.longitude,
+        };
+      });
+    } else if (geoInfo?.latitude && geoInfo?.longitude) {
+      setHasGeoData(true);
+    } else {
+      setHasGeoData(false);
+      setGeoInfo(null);
     }
 
     if (messages.length > 0) {
@@ -781,9 +811,9 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
               />
             ) : ungroupedImages.length > 0 ? (
               <div className="space-y-4 w-full">
-                <div className="grid grid-cols-2 gap-2 h-120 border-2 border-dashed border-gray-600 rounded-lg p-4 overflow-y-auto">
+                <div className="grid grid-cols-2 md:grid-cols-4 grid-rows-3 md:grid-rows-3 gap-2 h-120 border-2 border-dashed border-gray-600 rounded-lg p-4 overflow-y-auto">
                   {ungroupedImages.map((image, index) => (
-                    <div key={image.id} className="relative group">
+                    <div key={image.id} className="w-64 relative group h-32">
                       <Tooltip
                         placement="top"
                         arrow
@@ -800,7 +830,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                         <img
                           src={image.preview}
                           alt={`Uploaded inscription ${index + 1}`}
-                          className="w-full h-32 object-contain border border-gray-300 rounded-lg"
+                          className="w-64 h-32 object-contain border border-gray-300 rounded-lg"
                         />
                       </Tooltip>
 
@@ -870,7 +900,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                 <span className="text-sm text-gray-600">Total Images: {totalImages} / 20</span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border-2 border-dashed border-gray-300 rounded-lg p-3 min-h-[120px]">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-2 border-dashed border-gray-300 rounded-lg p-3 min-h-[120px]">
                 {ungroupedImages.length > 0 ? (
                   ungroupedImages.map((image, index) => (
                     <label key={image.id} className="relative block cursor-pointer">
@@ -880,11 +910,26 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                         onChange={() => toggleImageSelection(image.id)}
                         className="absolute top-2 left-2 h-4 w-4 z-10"
                       />
-                      <img
-                        src={image.preview}
-                        alt={`Ungrouped ${index + 1}`}
-                        className="w-full h-28 object-cover rounded-md"
-                      />
+                      <Tooltip
+                        placement="top"
+                        arrow
+                        title={
+                          <div className="p-1">
+                            <img
+                              src={image.preview}
+                              alt={`Preview ${index + 1}`}
+                              className="w-64 h-64 object-contain rounded-md bg-black"
+                            />
+                          </div>
+                        }
+                      >
+
+                        <img
+                          src={image.preview}
+                          alt={`Ungrouped ${index + 1}`}
+                          className="w-full h-28 object-cover rounded-md"
+                        />
+                      </Tooltip>
                     </label>
                   ))
                 ) : (
@@ -952,11 +997,25 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                                 disabled={disableEdits}
                                 className="absolute top-2 left-2 h-4 w-4 z-10"
                               />
-                              <img
-                                src={image.preview}
-                                alt={`${group.name} image ${index + 1}`}
-                                className="w-full h-28 object-cover rounded-md"
-                              />
+                              <Tooltip
+                                placement="top"
+                                arrow
+                                title={
+                                  <div className="p-1">
+                                    <img
+                                      src={image.preview}
+                                      alt={`Preview ${index + 1}`}
+                                      className="w-64 h-64 object-contain rounded-md bg-black"
+                                    />
+                                  </div>
+                                }
+                              >
+                                <img
+                                  src={image.preview}
+                                  alt={`${group.name} image ${index + 1}`}
+                                  className="w-full h-28 object-cover rounded-md"
+                                />
+                              </Tooltip>
                             </label>
                           ))
                         ) : (

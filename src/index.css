@@ -59,6 +59,12 @@
   border-radius: 16px;
   border: 1px solid #ffeca8;
 }
+.card-styling-without-transition {
+  background: #fff7dc;
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid #ffeca8;
+}
 
 .cursor-pointer {
   cursor: pointer;

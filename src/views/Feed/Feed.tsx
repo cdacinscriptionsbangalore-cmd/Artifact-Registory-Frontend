@@ -66,6 +66,7 @@ const Feed = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [UserDetails, SetUserDetails] = useState<any | null>(null);
   const [hasFetchedPosts, setHasFetchedPosts] = useState(false);
+  const [transcriptionCountByPostId, setTranscriptionCountByPostId] = useState<Record<string, number>>({});
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentPage, setCurrentPage] = useState<number>(() => getPageFromParams(searchParams));
 
@@ -197,6 +198,27 @@ const Feed = () => {
   const totalPages = Math.max(1, Math.ceil(filteredPosts.length / PAGE_SIZE));
   const paginatedPosts = filteredPosts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
+  const getTranscriptionCount = async (postId: string): Promise<number> => {
+    if (!postId) return 0;
+    try {
+      const urlencoded = new URLSearchParams();
+      urlencoded.append("postId", postId);
+
+      const response = await coreBackendClient.post("post/getPostDiscription", urlencoded);
+      const payload = unwrapApiData(response.data);
+
+      if (Array.isArray(payload)) return payload.length;
+      if (Array.isArray(payload?.data)) return payload.data.length;
+      if (typeof payload?.count === "number" && Number.isFinite(payload.count)) return payload.count;
+      if (typeof payload?.total === "number" && Number.isFinite(payload.total)) return payload.total;
+
+      return 0;
+    } catch (error) {
+      console.error(`Failed to fetch transcription count for post ${postId}:`, error);
+      return 0;
+    }
+  };
+
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
 
@@ -232,6 +254,44 @@ const Feed = () => {
       return nextParams;
     }, { replace: true });
   }, [currentPage, hasFetchedPosts, totalPages, setSearchParams]);
+
+  useEffect(() => {
+    if (isOffline) return;
+
+    const postIdsToFetch = paginatedPosts
+      .map((post) => post?._id)
+      .filter((postId): postId is string => Boolean(postId))
+      .filter((postId) => transcriptionCountByPostId[postId] === undefined);
+
+    if (postIdsToFetch.length === 0) return;
+
+    let isCancelled = false;
+
+    const fetchCountsForVisiblePosts = async () => {
+      const results = await Promise.all(
+        postIdsToFetch.map(async (postId) => {
+          const count = await getTranscriptionCount(postId);
+          return [postId, count] as const;
+        })
+      );
+
+      if (isCancelled) return;
+
+      setTranscriptionCountByPostId((previous) => {
+        const next = { ...previous };
+        results.forEach(([postId, count]) => {
+          next[postId] = count;
+        });
+        return next;
+      });
+    };
+
+    fetchCountsForVisiblePosts();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [paginatedPosts, transcriptionCountByPostId]);
 
   // Responsive layout adjustment
   useEffect(() => {
@@ -314,6 +374,7 @@ const Feed = () => {
               key={post._id}
               post={post}
               layout={layout}
+              transcriptionCount={transcriptionCountByPostId[post._id]}
             />
           ))}
         </div>

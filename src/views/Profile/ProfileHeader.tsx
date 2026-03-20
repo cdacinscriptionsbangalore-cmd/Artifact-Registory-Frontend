@@ -82,6 +82,8 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
     setSnackbarOpen(true);
   };
 
+  const coverSrc = coverImage || coverPhoto;
+
   const getInitials = (name?: string) => {
     if (!name) return 'U';
 
@@ -95,7 +97,14 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
   };
 
   return (
-    <div className="rounded-lg pt-6 pb-6 mb-50 border-1 border-slate-800/50 min-h-[200px] md:min-h-[400px] bg-center bg-fill md:bg-cover bg-no-repeat" style={{ background: `url(${coverImage || coverPhoto})`, position: "relative", backgroundSize: "cover", backgroundPosition: "center" }}>
+    <div className="relative rounded-lg pt-6 pb-6 mb-50 border-1 border-slate-800/50 min-h-[200px] md:min-h-[400px]">
+      <img
+        key={coverSrc}
+        src={coverSrc}
+        alt="Profile cover"
+        className="absolute inset-0 h-full w-full rounded-lg object-cover object-center pointer-events-none select-none z-0"
+        onError={() => setCoverImage("")}
+      />
       <EditProfileModal
         userName={profileName || user.username || user.name}
         display={displayModal}
@@ -121,7 +130,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
           {snackbarMessage}
         </Alert>
       </Snackbar>
-      <div className="flex flex-col items-center" style={{ position: "absolute", bottom: 0, left: "50%", transform: "translate(-50%, 78%)", backgroundColor: "none" }}>
+      <div className="flex flex-col items-center z-20" style={{ position: "absolute", bottom: 0, left: "50%", transform: "translate(-50%, 78%)", backgroundColor: "none" }}>
         <div className="relative">
           {profileImage ? (
             <img

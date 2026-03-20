@@ -12,13 +12,92 @@ interface DiscoveryCardProps {
   post: Post;
   layout?: string;
   loading?: boolean;
+  transcriptionCount?: number;
 }
 
-const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", loading }) => {
+const toTimestamp = (value: unknown): number => {
+  if (!value) return 0;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "string") {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+const getPostCreatedTimestamp = (post: Post): number => {
+  return (
+    toTimestamp((post as any)?.createdAt) ||
+    toTimestamp((post as any)?.description?.createdAt) ||
+    toTimestamp((post as any)?.updatedAt) ||
+    toTimestamp((post as any)?.description?.updatedAt)
+  );
+};
+
+const formatTimeAgo = (timestamp: number): string => {
+  if (!timestamp) return "Unknown time";
+
+  const diffMs = Date.now() - timestamp;
+  if (diffMs <= 0) return "Just now";
+
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const week = 7 * day;
+  const month = 30 * day;
+  const year = 365 * day;
+
+  if (diffMs < minute) return "Just now";
+  if (diffMs < hour) return `${Math.floor(diffMs / minute)}m ago`;
+  if (diffMs < day) return `${Math.floor(diffMs / hour)}h ago`;
+  if (diffMs < week) return `${Math.floor(diffMs / day)}d ago`;
+  if (diffMs < month) return `${Math.floor(diffMs / week)}w ago`;
+  if (diffMs < year) return `${Math.floor(diffMs / month)}mo ago`;
+  return `${Math.floor(diffMs / year)}y ago`;
+};
+
+const getCommentCount = (post: Post): number => {
+  const numericCandidates = [
+    (post as any)?.commentsCount,
+    (post as any)?.commentCount,
+    (post as any)?.totalComments,
+    (post as any)?.descriptionCount,
+    (post as any)?.discriptionCount,
+    (post as any)?.comment_count,
+    (post as any)?.comments_count,
+  ];
+
+  for (const value of numericCandidates) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return Math.max(0, Math.floor(value));
+    }
+  }
+
+  const arrayCandidates = [
+    (post as any)?.comments,
+    (post as any)?.descriptions,
+    (post as any)?.discriptions,
+    (post as any)?.postDescriptions,
+    (post as any)?.postDiscriptions,
+  ];
+
+  for (const value of arrayCandidates) {
+    if (Array.isArray(value)) {
+      return value.length;
+    }
+  }
+
+  return 0;
+};
+
+const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", loading, transcriptionCount }) => {
   const [isLiked, setIsLiked] = useState(false);
 
   const city = post?.description?.geolocation?.city ?? "Unknown";
   const state = post?.description?.geolocation?.state ?? "Unknown";
+  const commentCount = typeof transcriptionCount === "number" ? transcriptionCount : getCommentCount(post);
+  const postedTimeAgo = formatTimeAgo(getPostCreatedTimestamp(post));
   const visibilityRaw = (post as any)?.visibility ?? (post as any)?.visiblity;
   const postedAnonymously = (post as any)?.description?.postedAnonymously;
   const isPostVisible =
@@ -90,6 +169,11 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
               >
                 View details
               </NavLink>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-gray-700/40 flex items-center justify-between text-xs text-gray-400">
+              <span>{commentCount} {commentCount === 1 ? "transcription" : "transcriptions"}</span>
+              <span>Posted {postedTimeAgo}</span>
             </div>
           </div>
         </div>
@@ -168,6 +252,11 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
           >
             View details
           </NavLink>
+        </div>
+
+        <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between text-xs text-secondary-dark/70">
+          <span>{commentCount} {commentCount === 1 ? "Transcription" : "Transcriptions"}</span>
+          <span>Posted {postedTimeAgo}</span>
         </div>
       </div>
     </div>

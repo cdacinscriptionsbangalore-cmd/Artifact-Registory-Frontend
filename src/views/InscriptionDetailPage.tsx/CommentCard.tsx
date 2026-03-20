@@ -1,8 +1,19 @@
-import { Check, Pencil, ThumbsUp, Trash2, X } from "lucide-react";
+import { Check, Pencil, ThumbsUp, Trash2, TriangleAlert, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Comment } from "./InscriptionDetailPage1";
 import type { User } from "@/types";
-import { Tooltip } from "@mui/material";
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+  Tooltip,
+} from "@mui/material";
 import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
 
 interface CommentCardProps {
@@ -69,6 +80,15 @@ const resolveApiMessage = (body: any, payload: any, fallback: string): string =>
   return fallback;
 };
 
+const REPORT_REASONS = [
+  "Bullying or harassment",
+  "Hate symbols or hate speech",
+  "Inappropriate language",
+  "Spam or misleading",
+  "Violence or dangerous organizations",
+  "Selling or promoting restricted items",
+];
+
 const CommentCard: React.FC<CommentCardProps> = ({
   comments,
   currentUser,
@@ -85,6 +105,8 @@ const CommentCard: React.FC<CommentCardProps> = ({
   const [editValue, setEditValue] = useState(comments.description ?? "");
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
 
   const commentId = useMemo(() => toComparableId(comments._id ?? comments.id), [comments._id, comments.id]);
   const currentUserId = useMemo(() => toComparableId(currentUser?._id), [currentUser?._id]);
@@ -327,6 +349,24 @@ const CommentCard: React.FC<CommentCardProps> = ({
     }
   };
 
+  const handleOpenReportModal = () => {
+    if (isAuthor || isDeleting || isUpdating) return;
+    setReportReason("");
+    setIsReportModalOpen(true);
+  };
+
+  const handleCloseReportModal = () => {
+    setIsReportModalOpen(false);
+    setReportReason("");
+  };
+
+  const handleReportComment = () => {
+    if (!reportReason) return;
+    setIsReportModalOpen(false);
+    setReportReason("");
+    onActionSuccess?.("Comment reported successfully.");
+  };
+
 
 
   if (!currentUser) {
@@ -345,115 +385,170 @@ const CommentCard: React.FC<CommentCardProps> = ({
   }
 
   return (
-    <div className="border border-yellow-400 rounded-lg bg-white mb-6 p-3 w-full max-w-xs">
-      <div className="flex items-start justify-between ">
-        <div className="flex flex-col min-h-[100px] w-100" >
-          <div className="flex-1 ">
-            <div className="flex w-full items-start justify-between mb-3 ">
-              <h4 className="text-orange-400 font-semibold text-lg mb-1 capitalize" >{comments.username}</h4>
-              <div className="ml-4 flex items-center gap-2">
-                <Tooltip title="Like">
-                  {/* <p></p> */}
-                  <button
-                    onClick={likeDislikeAPI}
-                    disabled={isLiking || isUpdating || isDeleting}
-                    className={`flex cursor-pointer items-center gap-1 px-3 py-1 rounded-full transition-colors ${isLiked
-                      ? 'text-blue-400 bg-blue-900/30'
-                      : 'text-gray-400 hover:text-blue-400 hover:bg-blue-900/20'
-                      } ${(isLiking || isUpdating || isDeleting) ? 'opacity-60 cursor-not-allowed' : ''}`}
-                    aria-label={isLiked ? 'Unlike comment' : 'Like comment'}
-                  >
-                    <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                    <span className="font-medium">{likes}</span>
-                  </button>
-                </Tooltip>
-              </div>
+    <>
+      <div className="border border-yellow-400 rounded-lg bg-white mb-6 p-3 w-full max-w-xs">
+        <div className="flex items-start justify-between ">
+          <div className="flex flex-col min-h-[100px] w-100" >
+            <div className="flex-1 ">
+              <div className="flex w-full items-start justify-between mb-3 ">
+                <h4 className="text-orange-400 font-semibold text-lg mb-1 capitalize" >{comments.username}</h4>
+                <div className="ml-4 flex items-center gap-2">
+                  <Tooltip title="Like">
+                    {/* <p></p> */}
+                    <button
+                      onClick={likeDislikeAPI}
+                      disabled={isLiking || isUpdating || isDeleting}
+                      className={`flex cursor-pointer items-center gap-1 px-3 py-1 rounded-full transition-colors ${isLiked
+                        ? 'text-blue-400 bg-blue-900/30'
+                        : 'text-gray-400 hover:text-blue-400 hover:bg-blue-900/20'
+                        } ${(isLiking || isUpdating || isDeleting) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      aria-label={isLiked ? 'Unlike comment' : 'Like comment'}
+                    >
+                      <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                      <span className="font-medium">{likes}</span>
+                    </button>
+                  </Tooltip>
+                </div>
 
+              </div>
+              {isEditing ? (
+                <div className="mb-2" >
+                  <textarea
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    maxLength={200}
+                    rows={3}
+                    className="w-full rounded border border-gray-300 px-2 py-1 text-sm text-black focus:outline-none focus:border-orange-400"
+                  />
+                  <div className="text-xs text-gray-500 text-right">{editValue.length}/200</div>
+                </div>
+              ) : (
+                <p className="text-black text-base leading-relaxed">
+                  {comments.description}
+                </p>
+              )}
             </div>
-            {isEditing ? (
-              <div className="mb-2" >
-                <textarea
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  maxLength={200}
-                  rows={3}
-                  className="w-full rounded border border-gray-300 px-2 py-1 text-sm text-black focus:outline-none focus:border-orange-400"
-                />
-                <div className="text-xs text-gray-500 text-right">{editValue.length}/200</div>
-              </div>
-            ) : (
-              <p className="text-black text-base leading-relaxed">
-                {comments.description}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-xs text-gray-500 mt-2 gap-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-xs text-gray-500 mt-2 gap-4">
 
-            {/* Date */}
-            <span>
-              {new Intl.DateTimeFormat("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "2-digit",
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              })
-                .format(new Date(comments.createdAt))
-                .replace(",", "")
-              }
-            </span>
+              {/* Date */}
+              <span>
+                {new Intl.DateTimeFormat("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "2-digit",
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })
+                  .format(new Date(comments.createdAt))
+                  .replace(",", "")
+                }
+              </span>
 
-            {/* Edit/Delete */}
-            {isAuthor && (
-              <div className="flex gap-2">
-                {isEditing ? (
-                  <>
-                    <button
-                      onClick={handleUpdateComment}
-                      disabled={isUpdating || isDeleting}
-                      className="text-emerald-600 hover:text-emerald-700 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
-                    >
-                      <Check className="w-3 h-3" />
-                      Save
-                    </button>
+              {/* Edit/Delete/Report */}
+              {isAuthor ? (
+                <div className="flex gap-2">
+                  {isEditing ? (
+                    <>
+                      <button
+                        onClick={handleUpdateComment}
+                        disabled={isUpdating || isDeleting}
+                        className="text-emerald-600 hover:text-emerald-700 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Check className="w-3 h-3" />
+                        Save
+                      </button>
 
-                    <button
-                      onClick={handleCancelEdit}
-                      disabled={isUpdating || isDeleting}
-                      className="text-gray-500 hover:text-gray-700 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
-                    >
-                      <X className="w-3 h-3" />
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={handleStartEdit}
-                      disabled={isDeleting || isUpdating}
-                      className="text-gray-500 hover:text-blue-600 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
-                    >
-                      <Pencil className="w-3 h-3" />
-                      Edit
-                    </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={isUpdating || isDeleting}
+                        className="text-gray-500 hover:text-gray-700 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleStartEdit}
+                        disabled={isDeleting || isUpdating}
+                        className="text-gray-500 hover:text-blue-600 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        Edit
+                      </button>
 
-                    <button
-                      onClick={handleDeleteComment}
-                      disabled={isDeleting || isUpdating}
-                      className="text-gray-500 hover:text-red-600 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      Delete
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
+                      <button
+                        onClick={handleDeleteComment}
+                        disabled={isDeleting || isUpdating}
+                        className="text-gray-500 hover:text-red-600 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <button
+                    onClick={handleOpenReportModal}
+                    disabled={isDeleting || isUpdating}
+                    className="text-gray-500 hover:text-red-600 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                  >
+                    <TriangleAlert className="w-3 h-3" />
+                    Report
+                  </button>
+                </div>
+              )}
 
-          </div>        </div>
+            </div>        </div>
+        </div>
       </div>
-    </div>
+
+      <Dialog
+        open={isReportModalOpen}
+        onClose={handleCloseReportModal}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Report Comment</DialogTitle>
+        <DialogContent>
+          <p className="text-sm text-gray-600 mb-2">
+            Select a reason for reporting this comment.
+          </p>
+          <FormControl component="fieldset" fullWidth>
+            <RadioGroup
+              value={reportReason}
+              onChange={(event) => setReportReason(event.target.value)}
+            >
+              {REPORT_REASONS.map((reason) => (
+                <FormControlLabel
+                  key={reason}
+                  value={reason}
+                  control={<Radio />}
+                  label={reason}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseReportModal} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleReportComment}
+            color="error"
+            variant="contained"
+            disabled={!reportReason}
+          >
+            Report
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 

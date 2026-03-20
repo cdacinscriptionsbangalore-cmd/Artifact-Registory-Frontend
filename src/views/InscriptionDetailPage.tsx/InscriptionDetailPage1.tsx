@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ThumbsUp, MapPin, Calendar, Languages, BookOpen, Plus, MessageSquareWarning, Star, Trash, Edit, Check } from 'lucide-react';
+import React, { useState, useEffect, useContext } from 'react';
+import { ThumbsUp, MapPin, Calendar, Languages, BookOpen, Plus, MessageSquareWarning, Star, Trash, Edit, Check, TriangleAlert } from 'lucide-react';
 import CommentCard from './CommentCard';
 // import RatingModal from './RatingModal';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -12,7 +12,24 @@ import Modal from './Modal';
 // import placeholderImage3 from '@/assets/parallaxImages/banner3.jpg';
 // import placeholderImage4 from '@/assets/parallaxImages/banner4.png';
 import ImageCarousel1 from './ImageCarousel1';
-import { Snackbar, Alert, Slide, Tooltip, MenuItem, TextField } from "@mui/material";
+import {
+    Snackbar,
+    Alert,
+    Slide,
+    Tooltip,
+    Menu,
+    MenuItem,
+    TextField,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    FormControl,
+    FormControlLabel,
+    Radio,
+    RadioGroup,
+} from "@mui/material";
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import RatingModal1 from './RatingModal1';
 import cdacRoundLogo from '@/assets/cdacroundlogo.png';
@@ -22,8 +39,19 @@ import { coreBackendClient } from '@/utils/http/clients/coreBackend.client';
 import mockDiscoveryPosts from '@/Db/feeds';
 import { getDummyCommentsByPostId } from './dummyData';
 import { AnimatePresence, motion } from "framer-motion";
+import AuthContext from '@/context/AuthContext';
+import RatingStars from './RatingStars';
+import { MoreVert } from '@mui/icons-material';
 
 const USE_FALLBACK = false;
+const REPORT_REASONS = [
+    "Bullying or harassment",
+    "Hate symbols or hate speech",
+    "Inappropriate language",
+    "Spam or misleading",
+    "Violence or dangerous organizations",
+    "Selling or promoting restricted items",
+];
 
 export interface Comment {
     id?: string;
@@ -77,14 +105,25 @@ interface Post {
     script: string[];
     type: string;
     rating: number;
+    visiblity?: boolean;
+    visibility?: boolean;
 }
 
 
 interface EditPostFormState {
     title: string;
+    language: string;
+    script: string;
     topic: string;
     type: string;
+    postedAnonymously: boolean;
     description: string;
+}
+
+interface PendingEditImage {
+    id: string;
+    file: File;
+    previewUrl: string;
 }
 
 
@@ -136,6 +175,12 @@ const toStringArray = (value: unknown): string[] => {
     }
     return [];
 };
+
+const parseCommaSeparatedValues = (value: string): string[] =>
+    value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
 
 const extractImageIdFromUrl = (imageUrl: string): string => {
     if (!imageUrl) return "";
@@ -225,15 +270,22 @@ const InscriptionDetailsPage: React.FC = () => {
     const [isDeletingPost, setIsDeletingPost] = useState(false);
     const [showEditPostModal, setShowEditPostModal] = useState(false);
     const [isUpdatingPost, setIsUpdatingPost] = useState(false);
+    const [isReportPostModalOpen, setIsReportPostModalOpen] = useState(false);
+    const [reportPostReason, setReportPostReason] = useState("");
+    const [postActionAnchorEl, setPostActionAnchorEl] = useState<HTMLElement | null>(null);
     const [editPostForm, setEditPostForm] = useState<EditPostFormState>({
         title: "",
+        language: "",
+        script: "",
         topic: "",
         type: "Stone",
+        postedAnonymously: false,
         description: "",
     });
     const [editablePostImages, setEditablePostImages] = useState<string[]>([]);
     const [selectedImagesForDeletion, setSelectedImagesForDeletion] = useState<string[]>([]);
     const [deletedImageIds, setDeletedImageIds] = useState<string[]>([]);
+    const [newImagesForUpload, setNewImagesForUpload] = useState<PendingEditImage[]>([]);
 
     const handleOpen = () => setDisplay(true);
     const handleClose = () => setDisplay(false);
@@ -243,6 +295,7 @@ const InscriptionDetailsPage: React.FC = () => {
     const { id: postId } = useParams<{ id: string }>();
     const location = useLocation();
     const navigate = useNavigate();
+    const { isAuthenticated } = useContext(AuthContext);
 
     useEffect(() => {
         setLoading(true);
@@ -319,6 +372,7 @@ const InscriptionDetailsPage: React.FC = () => {
                 const response = await coreBackendClient.post(`post/getPostDiscription`, urlencoded);
 
                 const payload = unwrapApiData(response.data);
+                // console.log(payload)
                 const fetchedComments = Array.isArray(payload)
                     ? payload
                     : Array.isArray(payload?.data)
@@ -504,6 +558,12 @@ const InscriptionDetailsPage: React.FC = () => {
     };
 
     const handleConfirmDeletePost = async () => {
+        if (!isAuthenticated) {
+            setShowDeletePostModal(false);
+            handlePostError("Your session has expired. Please log in again.");
+            return;
+        }
+
         const resolvedPostId = normalizeEntityId(postToRender?._id) || normalizeEntityId(postId);
         if (!resolvedPostId) {
             handlePostError("Post id missing. Unable to delete.");
@@ -558,6 +618,8 @@ const InscriptionDetailsPage: React.FC = () => {
     const currentUserId = normalizeEntityId(userDetails?._id);
     const postOwnerId = normalizeEntityId(postToRender.user_id);
     const isPostAuthor = Boolean(currentUserId && postOwnerId && currentUserId === postOwnerId);
+    const canManagePost = isAuthenticated && isPostAuthor;
+    const canOpenPostOptions = isAuthenticated && Boolean(currentUserId);
     const normalizeInscriptionType = (value?: string) => {
         if (value === "Stone" || value === "Metal" || value === "Clay") {
             return value;
@@ -570,18 +632,85 @@ const InscriptionDetailsPage: React.FC = () => {
             : postToRender?.script
     );
     const normalizedLanguageValues = toStringArray(postToRender?.description?.language);
+    const postLocationLabel =
+        [postToRender?.description?.geolocation?.city, postToRender?.description?.geolocation?.state]
+            .map((value) => (typeof value === "string" ? value.trim() : ""))
+            .filter(Boolean)
+            .join(", ") || "Location unavailable";
+    const isPostActionMenuOpen = Boolean(postActionAnchorEl);
+
+    const handleOpenPostActionMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setPostActionAnchorEl(event.currentTarget);
+    };
+
+    const handleClosePostActionMenu = () => {
+        setPostActionAnchorEl(null);
+    };
 
     const handleOpenEditPostModal = () => {
+        const isAnonymousPost =
+            typeof postToRender?.visiblity === "boolean"
+                ? !postToRender.visiblity
+                : typeof postToRender?.visibility === "boolean"
+                    ? !postToRender.visibility
+                    : false;
+
         setEditPostForm({
             title: postToRender?.description?.title ?? "",
+            language: normalizedLanguageValues.join(", "),
+            script: normalizedScriptValues.join(", "),
             topic: postToRender?.topic ?? "",
             type: normalizeInscriptionType(postToRender?.type),
+            postedAnonymously: isAnonymousPost,
             description: postToRender?.description?.description ?? "",
         });
         setEditablePostImages(Array.isArray(postToRender?.images?.image) ? postToRender.images.image : []);
         setSelectedImagesForDeletion([]);
         setDeletedImageIds([]);
+        setNewImagesForUpload((previous) => {
+            previous.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+            return [];
+        });
         setShowEditPostModal(true);
+    };
+
+    const handleOpenEditPostFromMenu = () => {
+        handleClosePostActionMenu();
+        if (!canManagePost) {
+            handlePostError("Your session has expired. Please log in again.");
+            return;
+        }
+        handleOpenEditPostModal();
+    };
+
+    const handleOpenDeletePostFromMenu = () => {
+        handleClosePostActionMenu();
+        if (!canManagePost) {
+            handlePostError("Your session has expired. Please log in again.");
+            return;
+        }
+        setShowDeletePostModal(true);
+    };
+
+    const handleOpenReportPostFromMenu = () => {
+        handleClosePostActionMenu();
+        if (!isAuthenticated || isPostAuthor) {
+            return;
+        }
+        setReportPostReason("");
+        setIsReportPostModalOpen(true);
+    };
+
+    const handleCloseReportPostModal = () => {
+        setIsReportPostModalOpen(false);
+        setReportPostReason("");
+    };
+
+    const handleReportPost = () => {
+        if (!reportPostReason) return;
+        setIsReportPostModalOpen(false);
+        setReportPostReason("");
+        handlePostSuccess("Post reported successfully.");
     };
 
     const handleCloseEditPostModal = () => {
@@ -589,9 +718,16 @@ const InscriptionDetailsPage: React.FC = () => {
         setEditablePostImages([]);
         setSelectedImagesForDeletion([]);
         setDeletedImageIds([]);
+        setNewImagesForUpload((previous) => {
+            previous.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+            return [];
+        });
     };
 
-    const handleEditPostFieldChange = (field: keyof EditPostFormState, value: string) => {
+    const handleEditPostFieldChange = <K extends keyof EditPostFormState>(
+        field: K,
+        value: EditPostFormState[K]
+    ) => {
         setEditPostForm((previous) => ({ ...previous, [field]: value }));
     };
 
@@ -632,7 +768,43 @@ const InscriptionDetailsPage: React.FC = () => {
         setSelectedImagesForDeletion([]);
     };
 
+    const handleAddEditPostImages = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFiles = Array.from(event.target.files ?? []);
+        if (selectedFiles.length === 0) return;
+
+        const imageFiles = selectedFiles.filter((file) => file.type.startsWith("image/"));
+        if (imageFiles.length === 0) {
+            handlePostError("Please select valid image files.");
+            event.target.value = "";
+            return;
+        }
+
+        const pendingImages = imageFiles.map((file, index) => ({
+            id: `${Date.now()}-${index}-${file.name}-${file.size}`,
+            file,
+            previewUrl: URL.createObjectURL(file),
+        }));
+
+        setNewImagesForUpload((previous) => [...previous, ...pendingImages]);
+        event.target.value = "";
+    };
+
+    const handleRemovePendingImage = (pendingImageId: string) => {
+        setNewImagesForUpload((previous) => {
+            const imageToRemove = previous.find((image) => image.id === pendingImageId);
+            if (imageToRemove) {
+                URL.revokeObjectURL(imageToRemove.previewUrl);
+            }
+            return previous.filter((image) => image.id !== pendingImageId);
+        });
+    };
+
     const handleConfirmEditPost = async () => {
+        if (!isAuthenticated) {
+            handlePostError("Your session has expired. Please log in again.");
+            return;
+        }
+
         const resolvedPostId = normalizeEntityId(postToRender?._id) || normalizeEntityId(postId);
         if (!resolvedPostId) {
             handlePostError("Post id missing. Unable to edit.");
@@ -640,6 +812,8 @@ const InscriptionDetailsPage: React.FC = () => {
         }
 
         const trimmedTitle = (editPostForm.title ?? "").trim();
+        const parsedLanguageValues = parseCommaSeparatedValues(editPostForm.language ?? "");
+        const parsedScriptValues = parseCommaSeparatedValues(editPostForm.script ?? "");
         const trimmedTopic = (editPostForm.topic ?? "").trim();
         const trimmedDescription = (editPostForm.description ?? "").trim();
         const normalizedType = normalizeInscriptionType(editPostForm.type);
@@ -659,7 +833,7 @@ const InscriptionDetailsPage: React.FC = () => {
             return;
         }
 
-        if (editablePostImages.length < 1) {
+        if (editablePostImages.length < 1 && newImagesForUpload.length < 1) {
             handlePostError("At least one image is required in a post.");
             return;
         }
@@ -671,13 +845,13 @@ const InscriptionDetailsPage: React.FC = () => {
                     title: trimmedTitle,
                     subject: trimmedTopic,
                     description: trimmedDescription,
-                    scriptLanguage: normalizedScriptValues,
-                    language: normalizedLanguageValues,
+                    scriptLanguage: parsedScriptValues,
+                    language: parsedLanguageValues,
                 },
                 topic: trimmedTopic,
-                script: normalizedScriptValues,
+                script: parsedScriptValues,
                 type: normalizedType,
-                visiblity: true,
+                visiblity: !editPostForm.postedAnonymously,
             };
 
             const form = new FormData();
@@ -688,6 +862,9 @@ const InscriptionDetailsPage: React.FC = () => {
             form.append("postId", resolvedPostId);
             deletedImageIds.forEach((imageId) => {
                 form.append("deletedImageIds", imageId);
+            });
+            newImagesForUpload.forEach((image) => {
+                form.append("files", image.file, image.file.name);
             });
 
             const response = await coreBackendClient.post("post/updatePost", form);
@@ -705,7 +882,9 @@ const InscriptionDetailsPage: React.FC = () => {
                 return {
                     ...previous,
                     topic: trimmedTopic,
+                    script: parsedScriptValues,
                     type: normalizedType,
+                    visiblity: !editPostForm.postedAnonymously,
                     images: {
                         ...previous.images,
                         image: editablePostImages,
@@ -714,6 +893,8 @@ const InscriptionDetailsPage: React.FC = () => {
                     description: {
                         ...previous.description,
                         title: trimmedTitle,
+                        scriptLanguage: parsedScriptValues,
+                        language: parsedLanguageValues,
                         description: trimmedDescription,
                     },
                 };
@@ -776,7 +957,21 @@ const InscriptionDetailsPage: React.FC = () => {
                         >
                             <h4 className="text-lg font-semibold text-gray-900 mb-4">Edit</h4>
                             <div className="mb-4">
-                                <p className="text-sm font-medium text-gray-800">Post Images</p>
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <p className="text-sm font-medium text-gray-800">Post Images</p>
+                                    <label className="inline-flex items-center gap-2 rounded-md border border-blue-300 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 cursor-pointer hover:bg-blue-100 transition-colors">
+                                        <Plus className="w-4 h-4" />
+                                        Add Images
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            className="hidden"
+                                            onChange={handleAddEditPostImages}
+                                            disabled={isUpdatingPost}
+                                        />
+                                    </label>
+                                </div>
                                 <p className="text-xs text-gray-500">Select images first, then remove them.</p>
                                 <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-64 overflow-y-auto pr-1">
                                     {editablePostImages.map((imageUrl, index) => {
@@ -819,6 +1014,31 @@ const InscriptionDetailsPage: React.FC = () => {
                                         );
                                     })}
                                 </div>
+                                {newImagesForUpload.length > 0 && (
+                                    <div className="mt-4">
+                                        <p className="text-xs font-medium text-gray-700 mb-2">New Images To Upload</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-56 overflow-y-auto pr-1">
+                                            {newImagesForUpload.map((pendingImage) => (
+                                                <div key={pendingImage.id} className="relative overflow-hidden rounded-lg border border-blue-200">
+                                                    <img
+                                                        src={pendingImage.previewUrl}
+                                                        alt={pendingImage.file.name}
+                                                        className="h-24 w-full object-cover"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemovePendingImage(pendingImage.id)}
+                                                        disabled={isUpdatingPost}
+                                                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black cursor-pointer"
+                                                        aria-label={`Remove ${pendingImage.file.name}`}
+                                                    >
+                                                        <Trash className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                                 {selectedImagesForDeletion.length > 0 && (
                                     <div className="mt-3">
                                         <button
@@ -856,6 +1076,24 @@ const InscriptionDetailsPage: React.FC = () => {
                                     fullWidth
                                 />
                                 <TextField
+                                    label="Language"
+                                    size="small"
+                                    value={editPostForm.language}
+                                    onChange={(event) => handleEditPostFieldChange("language", event.target.value)}
+                                    placeholder="Comma separated values"
+                                    disabled={isUpdatingPost}
+                                    fullWidth
+                                />
+                                <TextField
+                                    label="Script"
+                                    size="small"
+                                    value={editPostForm.script}
+                                    onChange={(event) => handleEditPostFieldChange("script", event.target.value)}
+                                    placeholder="Comma separated values"
+                                    disabled={isUpdatingPost}
+                                    fullWidth
+                                />
+                                <TextField
                                     select
                                     label="Type"
                                     size="small"
@@ -869,15 +1107,31 @@ const InscriptionDetailsPage: React.FC = () => {
                                     <MenuItem value="Clay">Clay</MenuItem>
                                 </TextField>
                                 <TextField
-                                    label="Description"
+                                    select
+                                    label="Post Anonymously"
                                     size="small"
-                                    value={editPostForm.description}
-                                    onChange={(event) => handleEditPostFieldChange("description", event.target.value)}
+                                    value={editPostForm.postedAnonymously ? "true" : "false"}
+                                    onChange={(event) =>
+                                        handleEditPostFieldChange("postedAnonymously", event.target.value === "true")
+                                    }
                                     disabled={isUpdatingPost}
-                                    multiline
-                                    minRows={3}
                                     fullWidth
-                                />
+                                >
+                                    <MenuItem value="true">Yes</MenuItem>
+                                    <MenuItem value="false">No</MenuItem>
+                                </TextField>
+                                <div className="sm:col-span-2">
+                                    <TextField
+                                        label="Description"
+                                        size="small"
+                                        value={editPostForm.description}
+                                        onChange={(event) => handleEditPostFieldChange("description", event.target.value)}
+                                        disabled={isUpdatingPost}
+                                        multiline
+                                        minRows={3}
+                                        fullWidth
+                                    />
+                                </div>
                             </div>
                             <div className="mt-5 flex items-center justify-end gap-2">
                                 <button
@@ -942,6 +1196,48 @@ const InscriptionDetailsPage: React.FC = () => {
                 )}
             </AnimatePresence>
 
+            <Dialog
+                open={isReportPostModalOpen}
+                onClose={handleCloseReportPostModal}
+                fullWidth
+                maxWidth="xs"
+            >
+                <DialogTitle>Report Post</DialogTitle>
+                <DialogContent>
+                    <p className="text-sm text-gray-600 mb-2">
+                        Select a reason for reporting this post.
+                    </p>
+                    <FormControl component="fieldset" fullWidth>
+                        <RadioGroup
+                            value={reportPostReason}
+                            onChange={(event) => setReportPostReason(event.target.value)}
+                        >
+                            {REPORT_REASONS.map((reason) => (
+                                <FormControlLabel
+                                    key={reason}
+                                    value={reason}
+                                    control={<Radio />}
+                                    label={reason}
+                                />
+                            ))}
+                        </RadioGroup>
+                    </FormControl>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseReportPostModal} color="inherit">
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleReportPost}
+                        color="error"
+                        variant="contained"
+                        disabled={!reportPostReason}
+                    >
+                        Report
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
             <div className="max-w-7xl mx-auto p-1 flex justify-between gap-30 sm:p-4 flex-col md:flex-row sm:justify-center sm:gap-10">
                 {/* 
                 <ImageCarousel
@@ -957,33 +1253,31 @@ const InscriptionDetailsPage: React.FC = () => {
                             ? postToRender.images.image
                             : []}
                     />
-                    <div className='card-styling py-4 px-5'>
+                    <div className='card-styling-without-transition py-4 px-5'>
 
-                        <div className='flex justify-between items-start post-rating-like-share'>
+                        <div className='post-rating-like-share'>
 
-                            <div className="">
-                                <span className="text-[#000] text-2xl md:text-3xl font-bold">
-                                    {postToRender.description.title || 'Untitled Inscription'}
-                                    {/* {post.description.title || 'Untitled Inscription'} */}
-                                </span>
-                                <div className="flex items-center gap-2 text-[#000000] ">
-                                    <MapPin className="w-5 h-5 text-[#000000]" />
-                                    <span>{postToRender.description.geolocation && postToRender.description.geolocation.city}, {postToRender.description.geolocation && postToRender.description.geolocation.state || 'Location unavailable'}</span>
-                                    {/* <span>{post.description.geolocation && post.description.geolocation.city}, {post.description.geolocation && post.description.geolocation.state || 'Location unavailable'}</span> */}
-                                </div>
-                            </div>
+                            <div className="w-full">
+                                <span className="flex items-center justify-between text-[#000] text-2xl md:text-3xl font-bold">
+                                    {postToRender.description.title || "Untitled Inscription"}
 
-                            {/* Rating and Actions */}
-                            <div className="flex sm:flex-row sm:items-center sm:justify-between gap-4">
-                                <div className="flex items-center gap-4">
-                                    <Tooltip title="Average rating by users" className='cursor-pointer'>
-                                        <span className="inline-flex items-center gap-x-1.5 px-3 py-2 rounded-lg font-medium bg-teal-500 hover:bg-teal-300 border-1 border-teal-600 text-white">
-                                            <Star />{postToRender.rating ? Number(postToRender.rating).toFixed(1) : 0}
+                                    <span className="inline-flex items-center gap-x-1.5 px-3 py-2 rounded-lg font-medium">
+                                        <RatingStars rating={Number(postToRender.rating || 0)} />
+                                        <span className="text-base md:text-lg">
+                                            {postToRender.rating ? Number(postToRender.rating).toFixed(1) : "0.0"}
                                         </span>
-                                    </Tooltip>
+                                    </span>
+                                </span>                            </div>
+
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center justify-between gap-2 text-[#000000] min-w-0">
+                                    <div className='flex gap-3'>
+                                        <MapPin className="w-5 h-5 text-[#000000] shrink-0" />
+                                        {postLocationLabel}
+                                    </div>
                                 </div>
 
-                                <div className="flex gap-3">
+                                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                                     <button
                                         onClick={() => setShowRatingModal(true)}
                                         className="md:px-6 md:py-2 px-3 py-1 cursor-pointer bg-orange-500 border-1 border-orange-800 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
@@ -1004,23 +1298,52 @@ const InscriptionDetailsPage: React.FC = () => {
                                                 </button>
                                             </Tooltip>
                                         )}
-                                    {isPostAuthor && (
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={handleOpenEditPostModal}
-                                                className="flex items-center space-x-2 md:px-6 md:py-2 px-3 py-1 cursor-pointer bg-blue-500 border-1 border-blue-800 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                                    {canOpenPostOptions && (
+                                        <>
+                                            {/* <button
+                                                onClick={handleOpenPostActionMenu}
+                                                aria-controls={isPostActionMenuOpen ? "post-actions-menu" : undefined}
+                                                aria-haspopup="true"
+                                                aria-expanded={isPostActionMenuOpen ? "true" : undefined}
+                                                className="flex items-center justify-center md:px-6 md:py-2 px-3 py-1 cursor-pointer bg-blue-500 border-1 border-blue-800 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
                                             >
-                                                <Edit className="w-5 h-5" />
-                                                <div>Edit</div>
-                                            </button>
-                                            <button
-                                                onClick={() => setShowDeletePostModal(true)}
-                                                className="flex items-center space-x-2 md:px-6 md:py-2 px-3 py-1 cursor-pointer bg-red-500 border-1 border-red-800 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+                                                <Settings className="w-6 h-6" />
+                                            </button> */}
+                                            <Tooltip title="Options">
+                                                <div onClick={handleOpenPostActionMenu}
+                                                    aria-controls={isPostActionMenuOpen ? "post-actions-menu" : undefined}
+                                                    aria-haspopup="true"
+                                                    aria-expanded={isPostActionMenuOpen ? "true" : undefined}
+                                                    className="flex items-center justify-center md:py-2 py-1 cursor-pointer font-medium"
+                                                >
+                                                    <MoreVert />
+                                                </div>
+                                            </Tooltip>
+                                            <Menu
+                                                id="post-actions-menu"
+                                                anchorEl={postActionAnchorEl}
+                                                open={isPostActionMenuOpen}
+                                                onClose={handleClosePostActionMenu}
                                             >
-                                                <Trash className="w-5 h-5" />
-                                                <div>Delete</div>
-                                            </button>
-                                        </div>
+                                                {isPostAuthor ? (
+                                                    <>
+                                                        <MenuItem onClick={handleOpenEditPostFromMenu}>
+                                                            <Edit className="w-4 h-4 mr-2" />
+                                                            Edit Post
+                                                        </MenuItem>
+                                                        <MenuItem onClick={handleOpenDeletePostFromMenu} sx={{ color: "#dc2626" }}>
+                                                            <Trash className="w-4 h-4 mr-2" />
+                                                            Delete Post
+                                                        </MenuItem>
+                                                    </>
+                                                ) : (
+                                                    <MenuItem onClick={handleOpenReportPostFromMenu} sx={{ color: "#dc2626" }}>
+                                                        <TriangleAlert className="w-4 h-4 mr-2" />
+                                                        Report Post
+                                                    </MenuItem>
+                                                )}
+                                            </Menu>
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -1159,7 +1482,7 @@ const InscriptionDetailsPage: React.FC = () => {
 
 
                 {/* Comments Section */}
-                <div className='card-styling p-4'>
+                <div className='card-styling-without-transition p-4'>
 
                     <div className="w-full flex justify-between gap-4">
                         <div className="mb-8">
@@ -1198,7 +1521,7 @@ const InscriptionDetailsPage: React.FC = () => {
                                 />
                             ))}
 
-                        <div className="text-sm text-center text-gray-500">No more comments</div>
+                        <div className="text-sm text-center text-gray-500">No more transcriptions</div>
                     </div>
 
                 </div>
