@@ -3,7 +3,7 @@ import type React from "react";
 import { useState } from "react";
 // import { getCookie } from "@/utils/Auth/auth";
 
-import { Snackbar, Alert, Slide, TextField } from "@mui/material";
+import { TextField } from "@mui/material";
 import { AnimatePresence, motion } from "framer-motion";
 import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
 
@@ -16,11 +16,86 @@ interface ModelProps {
     onDescriptionAdded?: (createdComment: any) => void;
 }
 
+const extractErrorMessageFromPayload = (payload: unknown): string | null => {
+    if (!payload || typeof payload !== "object") return null;
+
+    const payloadRecord = payload as Record<string, unknown>;
+    const directCandidates = [
+        payloadRecord.error_message,
+        payloadRecord.message,
+        payloadRecord.error,
+    ];
+
+    for (const candidate of directCandidates) {
+        if (typeof candidate === "string" && candidate.trim()) {
+            return candidate.trim();
+        }
+    }
+
+    if (payloadRecord.data) {
+        return extractErrorMessageFromPayload(payloadRecord.data);
+    }
+
+    return null;
+};
+
+const resolveRequestErrorMessage = (error: unknown, fallback: string): string => {
+    if (error && typeof error === "object") {
+        const errorRecord = error as Record<string, unknown>;
+        const response = errorRecord.response as Record<string, unknown> | undefined;
+        const responseMessage = extractErrorMessageFromPayload(response?.data);
+        if (responseMessage) {
+            return responseMessage;
+        }
+
+        const directMessage = errorRecord.message;
+        if (typeof directMessage === "string" && directMessage.trim()) {
+            return directMessage.trim();
+        }
+    }
+
+    if (error instanceof Error && error.message.trim()) {
+        return error.message.trim();
+    }
+
+    return fallback;
+};
+
+const extractModerationReason = (message: string): string | null => {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) return null;
+
+    const moderationPrefix = "content failed moderation and was not saved";
+    if (!trimmedMessage.toLowerCase().includes(moderationPrefix)) {
+        return null;
+    }
+
+    const firstColonIndex = trimmedMessage.indexOf(":");
+    if (firstColonIndex >= 0 && firstColonIndex < trimmedMessage.length - 1) {
+        const reason = trimmedMessage.slice(firstColonIndex + 1).trim();
+        return reason || "Contains inappropriate language.";
+    }
+
+    return "Contains inappropriate language.";
+};
+
+const buildDescriptionModerationMessage = (
+    status: "ACCEPTED" | "REJECTED",
+    reason?: string
+): string => {
+    if (status === "ACCEPTED") {
+        return "description: ACCEPTED";
+    }
+
+    const normalizedReason = reason?.trim() || "Contains inappropriate language.";
+    return `description: REJECTED - ${normalizedReason}`;
+};
+
 const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAdded, onPostSuccess, onPostError }) => {
 
     const [inputValue, setInputValue] = useState("");
-    const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string>("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleInputChange = (value: string) => {
         // enforce max length at input time
@@ -34,6 +109,8 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
     };
 
     const handlePost = async () => {
+        if (isSubmitting) return;
+
         // basic validation before submit
         const trimmed = (inputValue || "").trim();
         if (!trimmed) {
@@ -46,123 +123,40 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
             onPostError?.("Maximum 200 characters allowed.");
             return;
         }
-        try {
 
+        try {
+            setIsSubmitting(true);
             const urlencoded = new URLSearchParams();
             urlencoded.append("postId", postId);
-            // keep spelling used by backend if required; adjust if backend expects "description"
-            urlencoded.append("discription", inputValue);
-            console.log("Posting description", { postId, inputValue });
+            // Send both keys to support current backend ("discription") and moderation payload semantics ("description").
+            urlencoded.append("description", trimmed);
+            urlencoded.append("discription", trimmed);
             const response = await coreBackendClient.post(`post/addPoastDiscription`, urlencoded);
-
-            // Log response shape for debugging
-            console.log("API response (axios):", {
-                status: response?.status,
-                statusText: response?.statusText,
-                data: response?.data,
-            });
-
-            // Support multiple possible shapes: { ok, data, message } or { data: {...} } or raw object
             const respBody = response?.data;
-
-            // If API follows { ok: boolean, data: any, message?: string }
             if (typeof respBody === 'object' && respBody !== null && 'ok' in respBody) {
                 if (!respBody.ok) {
-                    const errMsg = respBody.message || JSON.stringify(respBody);
-                    throw new Error(`${response.status || 'HTTP?'} - ${errMsg}`);
+                    throw new Error(resolveRequestErrorMessage({ response: { data: respBody } }, "Failed to post description."));
                 }
-
-                const created = respBody.data ?? respBody;
-                console.log("Description upload created object:", created);
-                // Normalize created object to expected shape before passing up
-                const cc: any = created ?? {};
-                const normalized = {
-                    _id: cc._id ?? cc.id ?? `local-${Date.now()}`,
-                    postId: cc.postId ?? cc.post_id ?? postId,
-                    userId: cc.userId ?? cc.user_id ?? cc.user_id_fk,
-                    username: cc.username ?? cc.user_name ?? cc.name ?? (cc.user && cc.user.name) ?? undefined,
-                    description: cc.description ?? cc.discription ?? cc.comment ?? inputValue,
-                    upvote: typeof cc.upvote === 'number' ? cc.upvote : (typeof cc.upvotes === 'number' ? cc.upvotes : 0),
-                    userVote: Array.isArray(cc.userVote) ? cc.userVote : (Array.isArray(cc.user_vote) ? cc.user_vote : []),
-                    createdAt: cc.createdAt ? new Date(cc.createdAt) : new Date(),
-                    updatedAt: cc.updatedAt ? new Date(cc.updatedAt) : new Date(),
-                };
-
-                onDescriptionAdded?.(normalized);
-                onPostSuccess?.("Description uploaded successfully!");
-                onClose();
-                return;
             }
 
-            // If API returned the created object directly
-            if (typeof respBody === 'object' && respBody !== null) {
-                console.log("API returned object body:", respBody);
-                const cc2: any = respBody ?? {};
-                const normalized2 = {
-                    _id: cc2._id ?? cc2.id ?? `local-${Date.now()}`,
-                    postId: cc2.postId ?? cc2.post_id ?? postId,
-                    userId: cc2.userId ?? cc2.user_id ?? cc2.user_id_fk,
-                    username: cc2.username ?? cc2.user_name ?? cc2.name ?? (cc2.user && cc2.user.name) ?? undefined,
-                    description: cc2.description ?? cc2.discription ?? cc2.comment ?? inputValue,
-                    upvote: typeof cc2.upvote === 'number' ? cc2.upvote : (typeof cc2.upvotes === 'number' ? cc2.upvotes : 0),
-                    userVote: Array.isArray(cc2.userVote) ? cc2.userVote : (Array.isArray(cc2.user_vote) ? cc2.user_vote : []),
-                    createdAt: cc2.createdAt ? new Date(cc2.createdAt) : new Date(),
-                    updatedAt: cc2.updatedAt ? new Date(cc2.updatedAt) : new Date(),
-                };
-                onDescriptionAdded?.(normalized2);
-                onPostSuccess?.("Description uploaded successfully!");
-                onClose();
-                return;
-            }
-
-            // Fallback: unexpected response
-            console.warn("Unexpected response shape for addPoastDiscription:", respBody);
-            const fallback = {
-                _id: `local-${Date.now()}`,
-                postId,
-                userId: undefined,
-                username: undefined,
-                description: inputValue,
-                upvote: 0,
-                userVote: [],
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            };
-            onDescriptionAdded?.(fallback);
-            onPostSuccess?.("Description uploaded (fallback)");
+            onDescriptionAdded?.(trimmed);
+            onPostSuccess?.("Comment posted successfully.");
+            setInputValue("");
+            setErrorMsg("");
             onClose();
         } catch (error) {
-            console.error("Upload failed NOT ERROR:", error);
-            // Log richer error details from axios
-            try {
-                console.error("Axios error details:", {
-                    message: (error as any)?.message,
-                    response: (error as any)?.response?.data,
-                    status: (error as any)?.response?.status,
-                    config: (error as any)?.config,
-                });
-            } catch (e) { }
-
-            if (error instanceof Error) {
-                console.error("Upload failed:", error);
-                onPostError?.(error.message || 'Upload failed');
+            const message = resolveRequestErrorMessage(error, "Failed to post description.");
+            const moderationReason = extractModerationReason(message);
+            if (moderationReason) {
+                onPostError?.(buildDescriptionModerationMessage("REJECTED", moderationReason));
             } else {
-                console.error("Unknown error:", error);
-                onPostError?.('An unknown error occurred.');
+                onPostError?.(message);
             }
         } finally {
-            setInputValue("");
+            setIsSubmitting(false);
         }
 
         // console.log("Posting:", inputValue);
-    };
-
-    const handleSnackbarClose = () => {
-        setSnackbarOpen(false);
-    };
-
-    const SlideTransition = (props: any) => {
-        return <Slide {...props} direction="down" />;
     };
 
     return (
@@ -195,6 +189,7 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
                                 multiline
                                 rows={3}
                                 fullWidth
+                                disabled={isSubmitting}
                                 error={!!errorMsg}
                                 helperText={errorMsg || `${inputValue.length}/200`}
                                 FormHelperTextProps={{ style: { margin: 0 } }}
@@ -202,8 +197,12 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
                         </div>
 
                         <div className="w-full flex justify-between">
-                            <button onClick={handlePost} className="ml-2 cursor-pointer bg-orange-400 text-white px-3 py-1 rounded">
-                                Post
+                            <button
+                                onClick={handlePost}
+                                disabled={isSubmitting}
+                                className="ml-2 cursor-pointer bg-orange-400 text-white px-3 py-1 rounded disabled:opacity-60"
+                            >
+                                {isSubmitting ? "Posting..." : "Post"}
                             </button>
                             <button onClick={() => {
                                 // prompt user if there's unsaved input
@@ -212,22 +211,10 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
                                     if (!confirmClose) return;
                                 }
                                 onClose();
-                            }} className="ml-2 cursor-pointer bg-slate-700 text-white px-3 py-1 rounded">
+                            }} disabled={isSubmitting} className="ml-2 cursor-pointer bg-slate-700 text-white px-3 py-1 rounded disabled:opacity-60">
                                 Close
                             </button>
                         </div>
-
-                        <Snackbar
-                            open={snackbarOpen}
-                            autoHideDuration={3000}
-                            onClose={handleSnackbarClose}
-                            anchorOrigin={{ vertical: "top", horizontal: "center" }}
-                            TransitionComponent={SlideTransition}
-                        >
-                            <Alert onClose={handleSnackbarClose} severity={"success"} sx={{ width: "100%" }}>
-                                {"Description uploaded successfully!"}
-                            </Alert>
-                        </Snackbar>
                     </motion.div>
                 </motion.div>
             )}

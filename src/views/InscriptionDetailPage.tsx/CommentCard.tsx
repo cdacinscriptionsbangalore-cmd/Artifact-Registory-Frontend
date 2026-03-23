@@ -80,6 +80,74 @@ const resolveApiMessage = (body: any, payload: any, fallback: string): string =>
   return fallback;
 };
 
+const extractErrorMessageFromPayload = (payload: unknown): string | null => {
+  if (!payload || typeof payload !== "object") return null;
+
+  const payloadRecord = payload as Record<string, unknown>;
+  const directCandidates = [
+    payloadRecord.error_message,
+    payloadRecord.message,
+    payloadRecord.error,
+  ];
+
+  for (const candidate of directCandidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  if (payloadRecord.data) {
+    return extractErrorMessageFromPayload(payloadRecord.data);
+  }
+
+  return null;
+};
+
+const resolveRequestErrorMessage = (error: unknown, fallback: string): string => {
+  if (error && typeof error === "object") {
+    const errorRecord = error as Record<string, unknown>;
+    const response = errorRecord.response as Record<string, unknown> | undefined;
+    const responseMessage = extractErrorMessageFromPayload(response?.data);
+    if (responseMessage) {
+      return responseMessage;
+    }
+
+    const directMessage = errorRecord.message;
+    if (typeof directMessage === "string" && directMessage.trim()) {
+      return directMessage.trim();
+    }
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+
+  return fallback;
+};
+
+const extractModerationReason = (message: string): string | null => {
+  const trimmedMessage = message.trim();
+  if (!trimmedMessage) return null;
+
+  const moderationPrefix = "content failed moderation and was not saved";
+  if (!trimmedMessage.toLowerCase().includes(moderationPrefix)) {
+    return null;
+  }
+
+  const firstColonIndex = trimmedMessage.indexOf(":");
+  if (firstColonIndex >= 0 && firstColonIndex < trimmedMessage.length - 1) {
+    const reason = trimmedMessage.slice(firstColonIndex + 1).trim();
+    return reason || "Contains inappropriate language.";
+  }
+
+  return "Contains inappropriate language.";
+};
+
+const buildDescriptionModerationMessage = (reason: string): string => {
+  const normalizedReason = reason.trim() || "Contains inappropriate language.";
+  return `description: REJECTED - ${normalizedReason}`;
+};
+
 const REPORT_REASONS = [
   "Bullying or harassment",
   "Hate symbols or hate speech",
@@ -105,6 +173,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
   const [editValue, setEditValue] = useState(comments.description ?? "");
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
 
@@ -266,6 +335,8 @@ const CommentCard: React.FC<CommentCardProps> = ({
       const urlencoded = new URLSearchParams();
       urlencoded.append("discriptionId", commentId);
       urlencoded.append("discription", trimmed);
+      // Also send canonical key name for moderation consumers expecting "description".
+      urlencoded.append("description", trimmed);
 
       const response = await coreBackendClient.post(
         "post/updatePostDiscription",
@@ -292,16 +363,30 @@ const CommentCard: React.FC<CommentCardProps> = ({
       onActionSuccess?.("Description updated successfully!");
       setIsEditing(false);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to update description.";
+      const message = resolveRequestErrorMessage(error, "Failed to update description.");
+      const moderationReason = extractModerationReason(message);
       console.error("Failed to update description:", error);
-      onActionError?.(message);
+      if (moderationReason) {
+        onActionError?.(buildDescriptionModerationMessage(moderationReason));
+      } else {
+        onActionError?.(message);
+      }
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const handleDeleteComment = async () => {
+  const handleOpenDeleteModal = () => {
+    if (!isAuthor || isDeleting || isUpdating) return;
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (isDeleting) return;
+    setIsDeleteModalOpen(false);
+  };
+
+  const handleConfirmDeleteComment = async () => {
     if (!isAuthor) {
       onActionError?.("Only comment author can delete this comment.");
       return;
@@ -310,9 +395,6 @@ const CommentCard: React.FC<CommentCardProps> = ({
       onActionError?.("Comment id missing. Unable to delete.");
       return;
     }
-
-    const confirmDelete = window.confirm("Delete this comment?");
-    if (!confirmDelete) return;
 
     setIsDeleting(true);
     try {
@@ -337,12 +419,13 @@ const CommentCard: React.FC<CommentCardProps> = ({
         throw new Error(resolveApiMessage(body, payload, `Request failed with status ${response.status}`));
       }
 
+      setIsDeleteModalOpen(false);
       onCommentDeleted?.(commentId);
-      onActionSuccess?.("Description deleted successfully!");
+      onActionSuccess?.("Comment deleted successfully.");
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to delete description.";
-      console.error("Failed to delete description:", error);
+        error instanceof Error ? error.message : "Failed to delete comment.";
+      console.error("Failed to delete comment:", error);
       onActionError?.(message);
     } finally {
       setIsDeleting(false);
@@ -480,7 +563,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
                       </button>
 
                       <button
-                        onClick={handleDeleteComment}
+                        onClick={handleOpenDeleteModal}
                         disabled={isDeleting || isUpdating}
                         className="text-gray-500 hover:text-red-600 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
                       >
@@ -506,6 +589,33 @@ const CommentCard: React.FC<CommentCardProps> = ({
             </div>        </div>
         </div>
       </div>
+
+      <Dialog
+        open={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Delete Comment</DialogTitle>
+        <DialogContent>
+          <p className="text-sm text-gray-600">
+            Are you sure you want to delete this comment? This action cannot be undone.
+          </p>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteModal} color="inherit" disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmDeleteComment}
+            color="error"
+            variant="contained"
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog
         open={isReportModalOpen}

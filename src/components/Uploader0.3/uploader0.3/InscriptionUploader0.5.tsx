@@ -30,7 +30,7 @@ import { getEnvConfig } from "../config/env";
 import getCurrentLocation from "../utils/Camera/getCurrentLocation";
 import verifyGPSInImage from "../utils/GPS/verifyGPSInImage";
 
-const isOnline = true; // true => validate with AI, false => skip AI validation only
+const isOnline = false; // true => validate with AI, false => skip AI validation only
 const MAX_IMAGES = 16;
 
 interface ImageItem {
@@ -187,6 +187,108 @@ const resolveApiMessage = (body: any, payload: any, fallback: string): string =>
     return payload.error_message;
   }
   return fallback;
+};
+
+type ModerationFieldName = "topic" | "title" | "description";
+
+const extractErrorMessageFromPayload = (payload: unknown): string | null => {
+  if (!payload || typeof payload !== "object") return null;
+
+  const payloadRecord = payload as Record<string, unknown>;
+  const directCandidates = [
+    payloadRecord.error_message,
+    payloadRecord.message,
+    payloadRecord.error,
+  ];
+
+  for (const candidate of directCandidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  if (payloadRecord.data) {
+    return extractErrorMessageFromPayload(payloadRecord.data);
+  }
+
+  return null;
+};
+
+const resolveRequestErrorMessage = (error: unknown, fallback: string): string => {
+  if (error && typeof error === "object") {
+    const errorRecord = error as Record<string, unknown>;
+    const response = errorRecord.response as Record<string, unknown> | undefined;
+    const responseMessage = extractErrorMessageFromPayload(response?.data);
+    if (responseMessage) {
+      return responseMessage;
+    }
+
+    const directMessage = errorRecord.message;
+    if (typeof directMessage === "string" && directMessage.trim()) {
+      return directMessage.trim();
+    }
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+
+  return fallback;
+};
+
+const extractModerationReason = (message: string): string | null => {
+  const trimmedMessage = message.trim();
+  if (!trimmedMessage) return null;
+
+  const moderationPrefix = "content failed moderation and was not saved";
+  if (!trimmedMessage.toLowerCase().includes(moderationPrefix)) {
+    return null;
+  }
+
+  const firstColonIndex = trimmedMessage.indexOf(":");
+  if (firstColonIndex >= 0 && firstColonIndex < trimmedMessage.length - 1) {
+    const reason = trimmedMessage.slice(firstColonIndex + 1).trim();
+    return reason || "Contains inappropriate language.";
+  }
+
+  return "Contains inappropriate language.";
+};
+
+const inferRejectedFieldFromReason = (reason: string): ModerationFieldName => {
+  const normalizedReason = reason.toLowerCase();
+
+  if (normalizedReason.includes("topic") || normalizedReason.includes("subject")) {
+    return "topic";
+  }
+
+  if (normalizedReason.includes("title") || normalizedReason.includes("heading")) {
+    return "title";
+  }
+
+  if (
+    normalizedReason.includes("description") ||
+    normalizedReason.includes("comment") ||
+    normalizedReason.includes("body")
+  ) {
+    return "description";
+  }
+
+  return "description";
+};
+
+const buildModerationSnackbarMessage = (
+  rejectedField: ModerationFieldName,
+  reason: string
+): string => {
+  const normalizedReason = reason.trim() || "Contains inappropriate language.";
+  const fieldStatus: Record<ModerationFieldName, string> = {
+    topic: "ACCEPTED",
+    title: "ACCEPTED",
+    description: "ACCEPTED",
+  };
+
+  fieldStatus[rejectedField] = `REJECTED - ${normalizedReason}`;
+  return `topic: ${fieldStatus.topic} | title: ${fieldStatus.title} | description: ${fieldStatus.description}`;
 };
 
 const EnhancedInscriptionUploaderV5: React.FC = () => {
@@ -778,11 +880,20 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
           item.id === groupId ? { ...item, status: "error" } : item
         )
       );
-      const body = submitError?.response?.data;
-      const payload = unwrapApiData(body);
-      const message =
-        resolveApiMessage(body, payload, submitError?.message || "Failed to submit group");
-      setError(message);
+      const fallbackMessage = resolveApiMessage(
+        submitError?.response?.data,
+        unwrapApiData(submitError?.response?.data),
+        submitError?.message || "Failed to submit group"
+      );
+      const message = resolveRequestErrorMessage(submitError, fallbackMessage);
+      const moderationReason = extractModerationReason(message);
+
+      if (moderationReason) {
+        const rejectedField = inferRejectedFieldFromReason(moderationReason);
+        setError(buildModerationSnackbarMessage(rejectedField, moderationReason));
+      } else {
+        setError(message);
+      }
     } finally {
       setIsUploading(false);
       uploadLockRef.current = false;
@@ -794,7 +905,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
   ).length;
 
   return (
-    <div className="text-white p-4">
+    <div className="text-white p-4 max-w-7xl mx-auto">
       <div className="mx-auto">
         <Header />
 
@@ -1194,7 +1305,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                             (isUploading && !isSubmitting) ||
                             (isAnyGroupSubmitting && !isSubmitting)
                           }
-                          className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                          className="px-4 py-2 cursor-pointer rounded-lg bg-orange-600 hover:bg-orange-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed inline-flex items-center gap-2"
                         >
                           {isSubmitting ? (
                             <>
@@ -1214,7 +1325,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                           type="button"
                           onClick={() => handleDeleteGroup(group.id)}
                           disabled={disableEdits}
-                          className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+                          className="px-4 py-2 cursor-pointer rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
                           Delete Group
                         </button>

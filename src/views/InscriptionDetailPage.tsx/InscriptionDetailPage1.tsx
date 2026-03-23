@@ -163,6 +163,109 @@ const resolveApiMessage = (body: any, payload: any, fallback: string): string =>
     return fallback;
 };
 
+type ModerationFieldName = "topic" | "title" | "description";
+
+const extractErrorMessageFromPayload = (payload: unknown): string | null => {
+    if (!payload || typeof payload !== "object") return null;
+
+    const payloadRecord = payload as Record<string, unknown>;
+    const directCandidates = [
+        payloadRecord.error_message,
+        payloadRecord.message,
+        payloadRecord.error,
+    ];
+
+    for (const candidate of directCandidates) {
+        if (typeof candidate === "string" && candidate.trim()) {
+            return candidate.trim();
+        }
+    }
+
+    if (payloadRecord.data) {
+        return extractErrorMessageFromPayload(payloadRecord.data);
+    }
+
+    return null;
+};
+
+const resolveRequestErrorMessage = (error: unknown, fallback: string): string => {
+    if (error && typeof error === "object") {
+        const errorRecord = error as Record<string, unknown>;
+        const response = errorRecord.response as Record<string, unknown> | undefined;
+        const responseMessage = extractErrorMessageFromPayload(response?.data);
+        if (responseMessage) {
+            return responseMessage;
+        }
+
+        const directMessage = errorRecord.message;
+        if (typeof directMessage === "string" && directMessage.trim()) {
+            return directMessage.trim();
+        }
+    }
+
+    if (error instanceof Error && error.message.trim()) {
+        return error.message.trim();
+    }
+
+    return fallback;
+};
+
+const extractModerationReason = (message: string): string | null => {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) return null;
+
+    const moderationPrefix = "content failed moderation and was not saved";
+    if (!trimmedMessage.toLowerCase().includes(moderationPrefix)) {
+        return null;
+    }
+
+    const firstColonIndex = trimmedMessage.indexOf(":");
+    if (firstColonIndex >= 0 && firstColonIndex < trimmedMessage.length - 1) {
+        const reason = trimmedMessage.slice(firstColonIndex + 1).trim();
+        return reason || "Contains inappropriate language.";
+    }
+
+    return "Contains inappropriate language.";
+};
+
+const inferRejectedFieldFromReason = (reason: string): ModerationFieldName => {
+    const normalizedReason = reason.toLowerCase();
+
+    if (normalizedReason.includes("topic") || normalizedReason.includes("subject")) {
+        return "topic";
+    }
+
+    if (normalizedReason.includes("title") || normalizedReason.includes("heading")) {
+        return "title";
+    }
+
+    if (
+        normalizedReason.includes("description") ||
+        normalizedReason.includes("comment") ||
+        normalizedReason.includes("body")
+    ) {
+        return "description";
+    }
+
+    return "description";
+};
+
+const buildModerationSnackbarMessage = (
+    rejectedField: ModerationFieldName,
+    reason: string
+): string => {
+    const normalizedReason = reason.trim() || "Contains inappropriate language.";
+    const fieldStatus: Record<ModerationFieldName, string> = {
+        topic: "ACCEPTED",
+        title: "ACCEPTED",
+        description: "ACCEPTED",
+    };
+
+    fieldStatus[rejectedField] = `REJECTED - ${normalizedReason}`;
+
+    return `topic: ${fieldStatus.topic}\ntitle: ${fieldStatus.title}\ndescription: ${fieldStatus.description}`;
+};
+
 const toStringArray = (value: unknown): string[] => {
     if (Array.isArray(value)) {
         return value
@@ -902,9 +1005,15 @@ const InscriptionDetailsPage: React.FC = () => {
             handleCloseEditPostModal();
             handlePostSuccess("Post updated successfully.");
         } catch (error) {
-            const message =
-                error instanceof Error ? error.message : "Failed to update post.";
-            handlePostError(message);
+            const message = resolveRequestErrorMessage(error, "Failed to update post.");
+            const moderationReason = extractModerationReason(message);
+
+            if (moderationReason) {
+                const rejectedField = inferRejectedFieldFromReason(moderationReason);
+                handlePostError(buildModerationSnackbarMessage(rejectedField, moderationReason));
+            } else {
+                handlePostError(message);
+            }
         } finally {
             setIsUpdatingPost(false);
         }
@@ -932,7 +1041,7 @@ const InscriptionDetailsPage: React.FC = () => {
                 anchorOrigin={{ vertical: "top", horizontal: "center" }}
                 TransitionComponent={Slide}
             >
-                <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: "100%" }}>
+                <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: "100%", whiteSpace: "pre-line" }}>
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
@@ -955,11 +1064,11 @@ const InscriptionDetailsPage: React.FC = () => {
                             transition={{ duration: 0.25 }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <h4 className="text-lg font-semibold text-gray-900 mb-4">Edit</h4>
+                            <h4 className="text-lg font-semibold text-gray-900 mb-4">Edit Post</h4>
                             <div className="mb-4">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <p className="text-sm font-medium text-gray-800">Post Images</p>
-                                    <label className="inline-flex items-center gap-2 rounded-md border border-blue-300 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 cursor-pointer hover:bg-blue-100 transition-colors">
+                                    <label className="inline-flex items-center gap-2 rounded-md border border-orange-300 bg-orange-100 px-3 py-1.5 text-sm font-medium text-orange-700 cursor-pointer hover:bg-orange-200 transition-colors">
                                         <Plus className="w-4 h-4" />
                                         Add Images
                                         <input
@@ -1171,7 +1280,7 @@ const InscriptionDetailsPage: React.FC = () => {
                             transition={{ duration: 0.25 }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <h4 className="text-lg font-semibold text-gray-900 mb-2">Delete</h4>
+                            <h4 className="text-lg font-semibold text-gray-900 mb-2">Delete Post</h4>
                             <p className="text-sm text-gray-700 mb-5">
                                 Are you sure you want to delete this post? This action cannot be undone.
                             </p>

@@ -2,19 +2,31 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaFacebookF, FaTwitter, FaLinkedinIn, FaWhatsapp, FaLink } from "react-icons/fa";
 import { Share, Share2, X } from "lucide-react";
-import { Tooltip } from "@mui/material";
+import { Alert, Slide, Snackbar, Tooltip } from "@mui/material";
 import { createPortal } from "react-dom";
 
 const ShareProfileModal: React.FC = () => {
     const [open, setOpen] = useState(false);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
     const pageUrl = typeof window !== "undefined" ? window.location.href : "";
+
+    const handleSnackbarClose = () => {
+        setSnackbarOpen(false);
+    };
 
     const copyToClipboard = async () => {
         try {
             await navigator.clipboard.writeText(pageUrl);
-            alert("Link copied to clipboard!");
+            setSnackbarMessage("Link copied to clipboard!");
+            setSnackbarSeverity("success");
+            setSnackbarOpen(true);
         } catch (err) {
             console.error("Failed to copy: ", err);
+            setSnackbarMessage("Failed to copy link.");
+            setSnackbarSeverity("error");
+            setSnackbarOpen(true);
         }
     };
 
@@ -27,6 +39,23 @@ const ShareProfileModal: React.FC = () => {
 
     return (
         <div className="flex justify-center items-center cursor-auto">
+            {typeof document !== "undefined" &&
+                createPortal(
+                    <Snackbar
+                        open={snackbarOpen}
+                        autoHideDuration={3000}
+                        onClose={handleSnackbarClose}
+                        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+                        TransitionComponent={Slide}
+                        sx={{ zIndex: 20000 }}
+                    >
+                        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: "100%" }}>
+                            {snackbarMessage}
+                        </Alert>
+                    </Snackbar>,
+                    document.body
+                )}
+
             {/* Share Button */}
             <Tooltip title="Share" className="cursor-pointer">
                 <button onClick={() => setOpen(true)} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 cursor-pointer">
