@@ -1,66 +1,45 @@
-name: CI/CD Pipeline
+name: CI — Build & Push to Docker Hub
 
 on:
   push:
-    branches: [ copy ]
-  pull_request:
-    branches: [ copy ]
+    branches:
+      - copy
 
 jobs:
-  frontend-ci:
+  build-and-push:
+    name: Build & Push
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Use Node.js
-        uses: actions/setup-node@v5
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          node-version: '20'
+          version: latest
 
-      - name: Cache npm modules for frontend
-        uses: actions/cache@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-frontend-${{ hashFiles('frontend/package-lock.json') }}
-          restore-keys: ${{ runner.os }}-npm-frontend-
+          node-version: 20
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
-      # - name: Run lint
-      #   run: npm run lint
-      #   working-directory: ./frontend
-
-      # - name: Prettier check
-      #   run: npm run format:check
-      #   working-directory: ./frontend
-
-      - name: Type check + build
-        run: npm run build
-      
-      - name: Build Docker image
-        run: docker build -t nayanmoni458/stoneinscription:frontend-latest .
+      - name: Build
+        run: pnpm build:production
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Push Docker image
-        run: docker push nayanmoni458/stoneinscription:frontend-latest
-
-      # - name: Run tests
-      #   run: npm test -- --watchAll=false
-      #   working-directory: ./frontend
-
-      # - name: Upload build artifact
-      #   if: ${{ success() }}
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: frontend-build
-      #     path: ./frontend/dist
-
-      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/frontend-latest:latest
