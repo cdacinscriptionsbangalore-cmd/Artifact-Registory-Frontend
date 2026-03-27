@@ -34,27 +34,15 @@ jobs:
       - name: Build
         run: pnpm vite build
 
-      # - name: Build Docker image
-      #   run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/stoneinscription:frontend-latest .
-
-      # - name: Log in to Docker Hub
-      #   uses: docker/login-action@v3
-      #   with:
-      #     username: ${{ secrets.DOCKER_USERNAME }}
-      #     password: ${{ secrets.DOCKER_PASSWORD }}
-
-      # - name: Push Docker image
-      #   run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/stoneinscription:frontend-latest
-
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/stoneinscription:frontend-latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/stoneinscription:frontend-latest
