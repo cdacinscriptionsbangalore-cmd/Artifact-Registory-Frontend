@@ -12,7 +12,7 @@ const parseEXIFForGPS = (dataView: DataView): GeoInfo | null => {
     
     if (exifHeader !== "Exif") return null;
     
-    let offset = 6;
+    const offset = 6;
     const byteOrder = dataView.getUint16(offset);
     const isLittleEndian = byteOrder === 0x4949;
     

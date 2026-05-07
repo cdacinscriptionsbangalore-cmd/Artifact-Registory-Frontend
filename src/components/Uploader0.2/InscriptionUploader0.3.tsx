@@ -126,7 +126,7 @@ const parseEXIFForGPS = (dataView: DataView): GeoInfo | null => {
 
     if (exifHeader !== "Exif") return null;
 
-    let offset = 6;
+    const offset = 6;
     const byteOrder = dataView.getUint16(offset);
     const isLittleEndian = byteOrder === 0x4949;
 
@@ -336,7 +336,7 @@ const EnhancedInscriptionUploader: React.FC = () => {
     setError(null);
 
     const newPhotos: string[] = [];
-    let errorMessages: string[] = [];
+    const errorMessages: string[] = [];
 
     for (const [idx, file] of Array.from(files).entries()) {
       try {
