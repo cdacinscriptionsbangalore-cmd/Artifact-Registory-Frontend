@@ -12,7 +12,7 @@ interface ModelProps {
 const Model: React.FC<ModelProps> = ({ postId, display, onClose }) => {
 
   const [inputValue, setInputValue] = useState("");
-  const handleInputChange = (e: String) => {
+  const handleInputChange = (e: string) => {
     setInputValue(e as string);
   };
 

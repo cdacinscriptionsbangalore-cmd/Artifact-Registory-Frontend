@@ -430,8 +430,8 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
   setGroupSuggestionLoading((previous) => ({ ...previous, [groupId]: true }));
 
   try {
-    let latitude = lat || geoInfo?.latitude;
-    let longitude = lon || geoInfo?.longitude;
+    const latitude = lat || geoInfo?.latitude;
+    const longitude = lon || geoInfo?.longitude;
     let normalizedLatitude = normalizeCoordinate(latitude);
     let normalizedLongitude = normalizeCoordinate(longitude);
 

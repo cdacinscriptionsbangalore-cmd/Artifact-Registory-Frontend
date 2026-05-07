@@ -58,8 +58,8 @@ export const storeJWTToken = (token: string, refreshToken: string) => {
 
 export const getJWTToken = (): string | null => {
   const cookies = document.cookie.split(';');
-  for (let c of cookies) {
-    let cookie = c.trim();
+  for (const c of cookies) {
+    const cookie = c.trim();
     if (cookie.startsWith('token=')) return cookie.substring(6);
   }
   return null;
@@ -67,8 +67,8 @@ export const getJWTToken = (): string | null => {
 
 export const getRefreshToken = (): string | null => {
   const cookies = document.cookie.split(';');
-  for (let c of cookies) {
-    let cookie = c.trim();
+  for (const c of cookies) {
+    const cookie = c.trim();
     if (cookie.startsWith('refresh=')) return cookie.substring(8);
   }
   return null;
@@ -147,7 +147,7 @@ export const validateSession = async (): Promise<boolean> => {
   }
   lastValidationTime = now;
 
-  let token = getJWTToken();
+  const token = getJWTToken();
 
   console.log('Validating session...');
 
@@ -173,7 +173,7 @@ export const validateSession = async (): Promise<boolean> => {
   const idealTime =
     (sessionEndTime.getTime() - sessionStartTime.getTime()) / (1000 * 60);
 
-  let timeDifferenceMinute = Math.floor(timeDifference / (1000 * 60));
+  const timeDifferenceMinute = Math.floor(timeDifference / (1000 * 60));
   const sessionTimeDifferenceMinute = Math.floor(
     sessionTimeDifference / (1000 * 60)
   );
@@ -241,7 +241,7 @@ export const resetSessionTimeout = (
     'scroll',
     'touchstart',
   ];
-  let token = getJWTToken();
+  const token = getJWTToken();
 
   if (!token) {
     if (timeoutId) clearTimeout(timeoutId);
