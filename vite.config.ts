@@ -77,6 +77,8 @@ export default defineConfig({
           },
         ],
       },
+      navigateFallback: '/index.html',
+      navigateFallbackDenylist: [/^\/api\//, /^\/detect\//, /^\/metrics$/, /^\/n8n$/],
       devOptions: {
         enabled: true,
         navigateFallback: 'index.html',
