@@ -15,6 +15,8 @@ import {
   TextField,
   Tooltip,
 } from "@mui/material";
+import { authStore } from "@/store/authStore";
+import { apiClient } from "@/utils/http/clients/backendApiClientGeneral";
 import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
 
 interface CommentCardProps {
@@ -169,14 +171,22 @@ const extractModerationReason = (message: string): string | null => {
   return "Invalid input: Contains inappropriate language.";
 };
 
-const REPORT_REASONS = [
-  "Bullying or harassment",
-  "Hate symbols or hate speech",
-  "Inappropriate language",
-  "Spam or misleading",
-  "Violence or dangerous organizations",
-  "Selling or promoting restricted items",
+type ReportReasonOption = {
+  label: string;
+  value: string;
+};
+
+const REPORT_REASONS: ReportReasonOption[] = [
+  { label: "Misinformation", value: "MISINFORMATION" },
+  { label: "Bullying or harassment", value: "HARASSMENT" },
+  { label: "Hate symbols or hate speech", value: "HATE_SPEECH" },
+  { label: "Spam or misleading", value: "SPAM" },
+  { label: "Explicit content", value: "EXPLICIT_CONTENT" },
+  { label: "Other", value: "OTHER" },
 ];
+
+const getReportReasonLabel = (reasonValue: string): string =>
+  REPORT_REASONS.find((reasonOption) => reasonOption.value === reasonValue)?.label ?? reasonValue;
 
 const CommentCard: React.FC<CommentCardProps> = ({
   comments,
@@ -199,6 +209,8 @@ const CommentCard: React.FC<CommentCardProps> = ({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [isReporting, setIsReporting] = useState(false);
 
   const commentId = useMemo(() => toComparableId(comments._id ?? comments.id), [comments._id, comments.id]);
   const currentUserId = useMemo(() => toComparableId(currentUser?._id), [currentUser?._id]);
@@ -490,21 +502,60 @@ const CommentCard: React.FC<CommentCardProps> = ({
   };
 
   const handleOpenReportModal = () => {
-    if (isAuthor || isDeleting || isUpdating) return;
+    if (isAuthor || isDeleting || isUpdating || isReporting) return;
     setReportReason("");
+    setReportDetails("");
     setIsReportModalOpen(true);
   };
 
   const handleCloseReportModal = () => {
+    if (isReporting) return;
     setIsReportModalOpen(false);
     setReportReason("");
+    setReportDetails("");
   };
 
-  const handleReportComment = () => {
+  const handleReportComment = async () => {
     if (!reportReason) return;
-    setIsReportModalOpen(false);
-    setReportReason("");
-    onActionSuccess?.("Comment reported successfully.");
+    if (!commentId) {
+      onActionError?.("Comment id missing. Unable to report.");
+      return;
+    }
+
+    const trimmedDetails = reportDetails.trim();
+    const reasonLabel = getReportReasonLabel(reportReason);
+
+    setIsReporting(true);
+    try {
+      const accessToken = authStore.getToken();
+      const response = await apiClient.post("/report", {
+        targetType: "COMMENT",
+        targetId: commentId,
+        reason: reportReason,
+        details: trimmedDetails || reasonLabel,
+      }, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      });
+
+      const body = response.data;
+      const payload = extractApiPayload(body);
+      const ok = resolveApiOk(body, payload);
+
+      if (!ok) {
+        throw new Error(resolveApiMessage(body, payload, `Request failed with status ${response.status}`));
+      }
+
+      const successMessage = resolveApiMessage(body, payload, "Report submitted for AI moderation.");
+      setIsReportModalOpen(false);
+      setReportReason("");
+      setReportDetails("");
+      onActionSuccess?.(successMessage);
+    } catch (error) {
+      const message = resolveRequestErrorMessage(error, "Failed to report comment.");
+      onActionError?.(message);
+    } finally {
+      setIsReporting(false);
+    }
   };
 
 
@@ -651,7 +702,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
                   <button
                     type="button"
                     onClick={handleOpenReportModal}
-                    disabled={isDeleting || isUpdating}
+                    disabled={isDeleting || isUpdating || isReporting}
                     className="text-gray-500 hover:text-red-600 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
                   >
                     <TriangleAlert className="w-3 h-3" />
@@ -709,26 +760,38 @@ const CommentCard: React.FC<CommentCardProps> = ({
             >
               {REPORT_REASONS.map((reason) => (
                 <FormControlLabel
-                  key={reason}
-                  value={reason}
+                  key={reason.value}
+                  value={reason.value}
                   control={<Radio />}
-                  label={reason}
+                  label={reason.label}
                 />
               ))}
             </RadioGroup>
           </FormControl>
+          <TextField
+            margin="dense"
+            fullWidth
+            multiline
+            minRows={3}
+            label="Additional details (optional)"
+            placeholder="Share extra context to help moderation."
+            value={reportDetails}
+            onChange={(event) => setReportDetails(event.target.value)}
+            inputProps={{ maxLength: 500 }}
+            helperText={`${reportDetails.length}/500`}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseReportModal} color="inherit">
+          <Button onClick={handleCloseReportModal} color="inherit" disabled={isReporting}>
             Cancel
           </Button>
           <Button
             onClick={handleReportComment}
             color="error"
             variant="contained"
-            disabled={!reportReason}
+            disabled={!reportReason || isReporting}
           >
-            Report
+            {isReporting ? "Reporting..." : "Report"}
           </Button>
         </DialogActions>
       </Dialog>

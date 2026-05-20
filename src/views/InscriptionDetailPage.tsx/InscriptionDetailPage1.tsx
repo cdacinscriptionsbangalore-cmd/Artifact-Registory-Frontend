@@ -35,6 +35,8 @@ import RatingModal1 from './RatingModal1';
 import cdacRoundLogo from '@/assets/cdacroundlogo.png';
 import type { User } from '@/types';
 import ShareModal from '@/components/ShareModal/ShareModal';
+import { authStore } from '@/store/authStore';
+import { apiClient } from '@/utils/http/clients/backendApiClientGeneral';
 import { coreBackendClient } from '@/utils/http/clients/coreBackend.client';
 import { detectAIClient } from '@/utils/http/clients/detectAIClient';
 import mockDiscoveryPosts from '@/Db/feeds';
@@ -46,14 +48,22 @@ import { MoreVert } from '@mui/icons-material';
 import AppImage from "@/components/AppImage";
 
 const USE_FALLBACK = false;
-const REPORT_REASONS = [
-    "Bullying or harassment",
-    "Hate symbols or hate speech",
-    "Inappropriate language",
-    "Spam or misleading",
-    "Violence or dangerous organizations",
-    "Selling or promoting restricted items",
+type ReportReasonOption = {
+    label: string;
+    value: string;
+};
+
+const REPORT_REASONS: ReportReasonOption[] = [
+    { label: "Misinformation", value: "MISINFORMATION" },
+    { label: "Bullying or harassment", value: "HARASSMENT" },
+    { label: "Hate symbols or hate speech", value: "HATE_SPEECH" },
+    { label: "Spam or misleading", value: "SPAM" },
+    { label: "Explicit content", value: "EXPLICIT_CONTENT" },
+    { label: "Other", value: "OTHER" },
 ];
+
+const getReportReasonLabel = (reasonValue: string): string =>
+    REPORT_REASONS.find((reasonOption) => reasonOption.value === reasonValue)?.label ?? reasonValue;
 const DESCRIPTION_PREVIEW_CHAR_LIMIT = 320;
 
 export interface Comment {
@@ -404,6 +414,8 @@ const InscriptionDetailsPage: React.FC = () => {
     const [isUpdatingPost, setIsUpdatingPost] = useState(false);
     const [isReportPostModalOpen, setIsReportPostModalOpen] = useState(false);
     const [reportPostReason, setReportPostReason] = useState("");
+    const [reportPostDetails, setReportPostDetails] = useState("");
+    const [isReportingPost, setIsReportingPost] = useState(false);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [postActionAnchorEl, setPostActionAnchorEl] = useState<HTMLElement | null>(null);
     const [editPostForm, setEditPostForm] = useState<EditPostFormState>({
@@ -1004,23 +1016,69 @@ const InscriptionDetailsPage: React.FC = () => {
 
     const handleOpenReportPostFromMenu = () => {
         handleClosePostActionMenu();
-        if (!isAuthenticated || isPostAuthor) {
+        if (!isAuthenticated || isPostAuthor || isReportingPost) {
             return;
         }
         setReportPostReason("");
+        setReportPostDetails("");
         setIsReportPostModalOpen(true);
     };
 
     const handleCloseReportPostModal = () => {
+        if (isReportingPost) return;
         setIsReportPostModalOpen(false);
         setReportPostReason("");
+        setReportPostDetails("");
     };
 
-    const handleReportPost = () => {
+    const handleReportPost = async () => {
         if (!reportPostReason) return;
-        setIsReportPostModalOpen(false);
-        setReportPostReason("");
-        handlePostSuccess("Post reported successfully.");
+
+        if (!isAuthenticated) {
+            handlePostError("Your session has expired. Please log in again.");
+            return;
+        }
+
+        const resolvedPostId = normalizeEntityId(postToRender?._id) || normalizeEntityId(postId);
+        if (!resolvedPostId) {
+            handlePostError("Post id missing. Unable to report.");
+            return;
+        }
+
+        const trimmedDetails = reportPostDetails.trim();
+        const reasonLabel = getReportReasonLabel(reportPostReason);
+
+        setIsReportingPost(true);
+        try {
+            const accessToken = authStore.getToken();
+            const response = await apiClient.post("/report", {
+                targetType: "POST",
+                targetId: resolvedPostId,
+                reason: reportPostReason,
+                details: trimmedDetails || reasonLabel,
+            }, {
+                headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+            });
+
+            const body = response?.data;
+            const payload = unwrapApiData(body);
+            const success = resolveApiSuccess(body, payload);
+
+            if (!success) {
+                throw new Error(resolveApiMessage(body, payload, "Failed to report post."));
+            }
+
+            const successMessage = resolveApiMessage(body, payload, "Report submitted for AI moderation.");
+            setIsReportPostModalOpen(false);
+            setReportPostReason("");
+            setReportPostDetails("");
+            handlePostSuccess(successMessage);
+        } catch (error) {
+            const message = resolveRequestErrorMessage(error, "Failed to report post.");
+            handlePostError(message);
+        } finally {
+            setIsReportingPost(false);
+        }
     };
 
     const handleCloseEditPostModal = () => {
@@ -1590,26 +1648,38 @@ const InscriptionDetailsPage: React.FC = () => {
                         >
                             {REPORT_REASONS.map((reason) => (
                                 <FormControlLabel
-                                    key={reason}
-                                    value={reason}
+                                    key={reason.value}
+                                    value={reason.value}
                                     control={<Radio />}
-                                    label={reason}
+                                    label={reason.label}
                                 />
                             ))}
                         </RadioGroup>
                     </FormControl>
+                    <TextField
+                        margin="dense"
+                        fullWidth
+                        multiline
+                        minRows={3}
+                        label="Additional details (optional)"
+                        placeholder="Share extra context to help moderation."
+                        value={reportPostDetails}
+                        onChange={(event) => setReportPostDetails(event.target.value)}
+                        inputProps={{ maxLength: 500 }}
+                        helperText={`${reportPostDetails.length}/500`}
+                    />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseReportPostModal} color="inherit">
+                    <Button onClick={handleCloseReportPostModal} color="inherit" disabled={isReportingPost}>
                         Cancel
                     </Button>
                     <Button
                         onClick={handleReportPost}
                         color="error"
                         variant="contained"
-                        disabled={!reportPostReason}
+                        disabled={!reportPostReason || isReportingPost}
                     >
-                        Report
+                        {isReportingPost ? "Reporting..." : "Report"}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -1713,7 +1783,7 @@ const InscriptionDetailsPage: React.FC = () => {
                                                         </MenuItem>,
                                                     ]
                                                 ) : (
-                                                    <MenuItem onClick={handleOpenReportPostFromMenu} sx={{ color: "#dc2626" }}>
+                                                    <MenuItem onClick={handleOpenReportPostFromMenu} disabled={isReportingPost} sx={{ color: "#dc2626" }}>
                                                         <TriangleAlert className="w-4 h-4 mr-2" />
                                                         Report Post
                                                     </MenuItem>
