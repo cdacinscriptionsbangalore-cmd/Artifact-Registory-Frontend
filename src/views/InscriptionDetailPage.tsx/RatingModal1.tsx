@@ -1,7 +1,7 @@
 // Rating Modal Component
 import type React from "react";
 import StarRating from "./StarRating";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 // Add `onRatingSubmitted` prop to handle success and error callbacks
@@ -9,7 +9,7 @@ interface RatingModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentRating: number;
-  onSubmitRating: (rating: number) => void;
+  onSubmitRating: (rating: number) => Promise<void> | void;
   onRatingSubmitted?: (success: boolean, message?: string) => void;
   postId: string
 }
@@ -26,12 +26,19 @@ const RatingModal: React.FC<RatingModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (isOpen) {
+      setRating(currentRating);
+      setError(null);
+    }
+  }, [isOpen, currentRating]);
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setError(null);
 
     try {
-      await onSubmitRating(rating); // Now parent handles API and state
+      await Promise.resolve(onSubmitRating(rating));
       if (onRatingSubmitted) {
         onRatingSubmitted(true);
       }

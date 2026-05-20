@@ -11,7 +11,7 @@ import { coreBackendClient } from '@/utils/http/clients/coreBackend.client';
 import { useSearchParams } from 'react-router-dom';
 // import { getTokenFromCookie } from '@/utils/cookieUtils';
 
-const isOffline = false;   // true => use mock data, false => use API
+const isOffline = true;   // true => use mock data, false => use API
 const getPageFromParams = (params: URLSearchParams) => {
   const pageParam = Number(params.get('page'));
   return Number.isFinite(pageParam) && pageParam > 0 ? Math.floor(pageParam) : 1;
@@ -61,7 +61,7 @@ export interface Post {
 
 // Main Discovery Feed Component
 const Feed = () => {
-  const PAGE_SIZE = 6;
+  const PAGE_SIZE = 20;
   const [layout, setLayout] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [UserDetails, SetUserDetails] = useState<any | null>(null);

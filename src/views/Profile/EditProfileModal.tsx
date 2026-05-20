@@ -22,7 +22,7 @@ interface EditProfileModalProps {
 }
 
 /**
- * Backend function to update user profile (username/bio)
+ * Backend function to update user profile (name/bio)
  * @param payload - The profile fields to update
  * @returns Promise with the response from backend
  */
@@ -142,7 +142,7 @@ const inferProfileModerationField = (reason: string): ProfileModerationField => 
     return "name";
 };
 
-const updateProfile = async (payload: { username?: string; bio?: string }): Promise<any> => {
+const updateProfile = async (payload: { name?: string; username?: string; bio?: string }): Promise<any> => {
     try {
         const response = await coreBackendClient.post("user/updateProfile", payload);
 
@@ -218,8 +218,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Backend username rules: letters, numbers, and underscores only
-    const usernameRegex = /^[a-zA-Z0-9_ ]+$/;
+    // Display name rules: letters, numbers, underscores, and spaces
+    const nameRegex = /^[a-zA-Z0-9_ ]+$/;
     // Backend bio rules: letters, numbers, and spaces only
     const bioRegex = /^(?=.*[A-Za-z0-9])[A-Za-z0-9 ]+$/;
 
@@ -234,11 +234,11 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         }
     }, [display, userName, bio]);
 
-    const validateUsername = (value: string) => {
+    const validateName = (value: string) => {
         const v = (value || "").trim();
         if (v.length < 3) return "Minimum 3 characters required.";
         if (v.length > 30) return "Maximum 30 characters allowed.";
-        if (!usernameRegex.test(v)) return "Only letters, numbers, and underscores are allowed.";
+        if (!nameRegex.test(v)) return "Only letters, numbers, underscores, and spaces are allowed.";
         return "";
     };
 
@@ -252,7 +252,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         setInputValue(value);
 
         // Clear error if valid
-        const msg = validateUsername(value);
+        const msg = validateName(value);
         if (!msg && errorMsg) {
             setErrorMsg("");
         }
@@ -293,7 +293,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         }
 
         if (isNameChanged) {
-            const msg = validateUsername(trimmed);
+            const msg = validateName(trimmed);
             if (msg) {
                 setErrorMsg(msg);
                 onEditError(msg);
@@ -324,14 +324,20 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             let updatedBio = currentBio;
 
             if (isNameChanged || isBioChanged) {
-                const requestBody: { username?: string; bio?: string } = {};
-                if (isNameChanged) requestBody.username = trimmed;
+                const requestBody: { name?: string; username?: string; bio?: string } = {};
+                if (isNameChanged) {
+                    requestBody.name = trimmed;
+                    // Keep backward compatibility for APIs that still use username for single-token names.
+                    if (!/\s/.test(trimmed)) {
+                        requestBody.username = trimmed;
+                    }
+                }
                 if (isBioChanged) requestBody.bio = bioToSave;
 
                 console.log("Updating profile", requestBody);
                 const response = await updateProfile(requestBody);
                 latestUserData = extractUserData(response);
-                updatedName = latestUserData?.username ?? trimmed;
+                updatedName = latestUserData?.name ?? trimmed;
                 updatedBio = latestUserData?.bio ?? bioToSave;
                 setProfileName(updatedName);
                 setBio(updatedBio);
@@ -354,11 +360,11 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             }
 
             if ((!isNameChanged || !isBioChanged) && latestUserData) {
-                if (!isNameChanged && (latestUserData?.username || latestUserData?.name)) {
-                    const fallbackUsername = latestUserData?.username ?? latestUserData?.name;
-                    if (fallbackUsername) {
-                        setProfileName(fallbackUsername);
-                        updatedName = fallbackUsername;
+                if (!isNameChanged && (latestUserData?.name || latestUserData?.username)) {
+                    const fallbackName = latestUserData?.name ?? latestUserData?.username;
+                    if (fallbackName) {
+                        setProfileName(fallbackName);
+                        updatedName = fallbackName;
                     }
                 }
                 if (!isBioChanged && latestUserData?.bio) {

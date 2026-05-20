@@ -10,6 +10,11 @@ import ShareProfileModal from "./ShareProfileModal";
 const backendApiUrl =
   window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
 
+const getPreferredDisplayName = (user?: Partial<User> | null): string => {
+  if (!user) return "";
+  return user?.name || user?.username || "";
+};
+
 const normalizeUserImageUrl = (rawUrl?: string | null): string => {
   if (!rawUrl) return "";
 
@@ -43,13 +48,13 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
-  const [profileName, setProfileName] = useState(user?.username || user?.name || "");
+  const [profileName, setProfileName] = useState(getPreferredDisplayName(user));
   const [bio, setBio] = useState(user?.bio || "Archaeology enthusiast & digital volunteer");
   const [profileImage, setProfileImage] = useState(normalizeUserImageUrl(user?.profileImage));
   const [coverImage, setCoverImage] = useState(normalizeUserImageUrl(user?.coverImage));
 
   useEffect(() => {
-    setProfileName(user?.username || user?.name || "");
+    setProfileName(getPreferredDisplayName(user));
     setBio(user?.bio || "Archaeology enthusiast & digital volunteer");
     setProfileImage(normalizeUserImageUrl(user?.profileImage));
     setCoverImage(normalizeUserImageUrl(user?.coverImage));
@@ -106,7 +111,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
         onError={() => setCoverImage("")}
       />
       <EditProfileModal
-        userName={profileName || user.username || user.name}
+        userName={profileName || user.name || user.username}
         display={displayModal}
         onClose={handleCloseModal}
         onEditSuccess={handleEditSuccess}
@@ -135,19 +140,19 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
           {profileImage ? (
             <img
               src={profileImage}
-              alt={profileName || user.username || user.name || "Profile Image"}
+              alt={profileName || user.name || user.username || "Profile Image"}
               className="w-20 h-20 rounded-full border-2 border-orange-500 object-cover"
               onError={() => setProfileImage("")}
             />
           ) : (
             <div className="w-20 h-20 rounded-full border-2 border-orange-500 bg-gray-600 flex items-center justify-center text-3xl font-bold text-white">
-              {getInitials(profileName || user.username || user.name)}
+              {getInitials(profileName || user.name || user.username)}
             </div>
           )}
         </div>
 
         <div className="flex-1 sm:text-center mt-4 w-100 text-center">
-          <h1 className="text-2xl font-bold text-black mb-2 capitalize">{profileName || user.username || user.name}</h1>
+          <h1 className="text-2xl font-bold text-black mb-2 capitalize">{profileName || user.name || user.username}</h1>
           <p className="text-black mb-4">{bio}</p>
 
           <div className="flex gap-2 justify-center sm:justify-center">

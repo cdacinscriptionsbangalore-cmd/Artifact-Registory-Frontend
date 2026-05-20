@@ -35,6 +35,7 @@ const getPostCreatedTimestamp = (post: Post): number => {
   );
 };
 
+const isOnline = true; // true => use actual visibility logic, false => assume all posts are visible
 const formatTimeAgo = (timestamp: number): string => {
   if (!timestamp) return "Unknown time";
 
@@ -150,7 +151,7 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
               </div>
             </div>
 
-            <p className="text-gray-300 text-sm mb-3 line-clamp-2">
+            <p className="text-gray-300 text-sm mb-3 line-clamp-2" style={{ textTransform: "capitalize" }}>
               {post.description.subject}
             </p>
 
@@ -172,7 +173,7 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
             </div>
 
             <div className="mt-3 pt-3 border-t border-gray-700/40 flex items-center justify-between text-xs text-gray-400">
-              <span>{commentCount} {commentCount === 1 ? "transcription" : "transcriptions"}</span>
+              {isOnline ? <span>{commentCount} {commentCount === 1 ? "transcription" : "transcriptions"}</span> : <span>{Math.floor(Math.random() * 50) + 1} transcriptions</span>}
               <span>Posted {postedTimeAgo}</span>
             </div>
           </div>
@@ -185,7 +186,7 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
     <div className="card-styling bg-primary-text rounded-lg overflow-hidden hover:transform hover:scale-105 transition-all duration-300">
 
       <div className="relative">
-        <Badge color="error" badgeContent={`${post?.images.image.length < 10 ? post?.images.image.length || 0 : `9+`}`+`${post.images.image.length === 1? " Image":" Images"}`} className="p-2" style={{width:"100%",position:"absolute", right:"10%",top:"8%"}} />
+        <Badge color="error" badgeContent={`${post?.images.image.length < 10 ? post?.images.image.length || 0 : `9+`}` + `${post.images.image.length === 1 ? " Image" : " Images"}`} className="p-2" style={{ width: "100%", position: "absolute", right: "10%", top: "8%" }} />
         {!loading ? <AppImage
           src={post.images.image[0]}
           alt={post.description.title}
@@ -201,8 +202,8 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
           {
             (<div className="bg-primary-background bg-opacity-80 rounded-lg p-3 flex items-center justify-between m-3 ">
               <div className="flex flex-col">
-                <span className="text-white font-semibold text-lg " >{post.description.title ? post.description.title : "Untitled"}</span>
-                <span className="text-white font-semibold text-xs capitalize" >Posted by: {authorName}</span>
+                <span className="text-white font-semibold text-lg capitalize  lg:max-w-[19vw] truncate" >{post.description.title ? post.description.title : "Untitled"}</span>
+                <span className="text-white font-semibold text-xs capitalize lg:max-w-[19vw] truncate" >Posted by: {authorName}</span>
               </div>
               <div className="flex items-center gap-2">
                 {post.rating > 0 ? (
@@ -223,12 +224,12 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
       </div>
 
       <div className="p-4">
-        <p className="text-secondary-dark text-sm mb-3 line-clamp-3">
+        <p className="text-secondary-dark text-sm mb-3 line-clamp-3 capitalize">
           {post.description.subject ? post.description.subject : "No description available."}
         </p>
 
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between capitalize">
           <div className="flex items-center gap-2 text-secondary-dark text-sm">
             <MapPin className="w-4 h-4" />
             <span>{city}, {state}</span>
@@ -255,7 +256,7 @@ const DiscoveryCard: React.FC<DiscoveryCardProps> = ({ post, layout = "grid", lo
         </div>
 
         <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between text-xs text-secondary-dark/70">
-          <span>{commentCount} {commentCount === 1 ? "Transcription" : "Transcriptions"}</span>
+          {isOnline ? <span>{commentCount} {commentCount === 1 ? "transcription" : "transcriptions"}</span> : <span>{Math.floor(Math.random() * 50) + 1} transcriptions</span>}
           <span>Posted {postedTimeAgo}</span>
         </div>
       </div>

@@ -45,7 +45,7 @@ import RatingStars from './RatingStars';
 import { MoreVert } from '@mui/icons-material';
 import AppImage from "@/components/AppImage";
 
-const USE_FALLBACK = false;
+const USE_FALLBACK = true;
 const REPORT_REASONS = [
     "Bullying or harassment",
     "Hate symbols or hate speech",
@@ -237,29 +237,74 @@ const extractModerationReason = (message: string): string | null => {
     return "Invalid input: Contains inappropriate language.";
 };
 
-const inferRejectedFieldFromReason = (reason: string): ModerationFieldName => {
-    const normalizedReason = reason.toLowerCase();
+const containsModerationFieldReference = (segment: string, field: ModerationFieldName): boolean => {
+    const normalizedSegment = segment.toLowerCase();
 
-    if (normalizedReason.includes("topic") || normalizedReason.includes("subject")) {
+    if (field === "topic") {
+        return (
+            /\b(topic|subject)\s*(field|input)?\s*[:=-]/.test(normalizedSegment) ||
+            /\b(topic|subject)\s+field\b/.test(normalizedSegment) ||
+            /\bin\s+(the\s+)?(topic|subject)\b/.test(normalizedSegment)
+        );
+    }
+
+    if (field === "title") {
+        return (
+            /\b(title|heading)\s*(field|input)?\s*[:=-]/.test(normalizedSegment) ||
+            /\b(title|heading)\s+field\b/.test(normalizedSegment) ||
+            /\bin\s+(the\s+)?(title|heading)\b/.test(normalizedSegment)
+        );
+    }
+
+    return (
+        /\b(description|comment|body)\s*(field|input)?\s*[:=-]/.test(normalizedSegment) ||
+        /\b(description|comment|body)\s+field\b/.test(normalizedSegment) ||
+        /\bin\s+(the\s+)?(description|comment|body)\b/.test(normalizedSegment)
+    );
+};
+
+const extractQuotedTermsFromModerationReason = (reason: string): string[] =>
+    [...reason.matchAll(/['"]([^'"\r\n]{2,})['"]/g)]
+        .map((match) => match[1]?.trim().toLowerCase() ?? "")
+        .filter(Boolean);
+
+const inferRejectedFieldFromReason = (
+    reason: string,
+    fieldValues?: Partial<Record<ModerationFieldName, string>>
+): ModerationFieldName => {
+    if (containsModerationFieldReference(reason, "topic")) {
         return "topic";
     }
 
-    if (normalizedReason.includes("title") || normalizedReason.includes("heading")) {
+    if (containsModerationFieldReference(reason, "title")) {
         return "title";
     }
 
-    if (
-        normalizedReason.includes("description") ||
-        normalizedReason.includes("comment") ||
-        normalizedReason.includes("body")
-    ) {
+    if (containsModerationFieldReference(reason, "description")) {
         return "description";
+    }
+
+    if (fieldValues) {
+        const quotedTerms = extractQuotedTermsFromModerationReason(reason);
+        if (quotedTerms.length > 0) {
+            const matchedFields = (["title", "topic", "description"] as ModerationFieldName[]).filter((field) => {
+                const fieldValue = (fieldValues[field] ?? "").toLowerCase();
+                return quotedTerms.some((term) => fieldValue.includes(term));
+            });
+
+            if (matchedFields.length === 1) {
+                return matchedFields[0];
+            }
+        }
     }
 
     return "description";
 };
 
-const buildModerationFieldErrors = (reason: string): ModerationFieldErrors => {
+const buildModerationFieldErrors = (
+    reason: string,
+    fieldValues?: Partial<Record<ModerationFieldName, string>>
+): ModerationFieldErrors => {
     const normalizedReason = reason.trim() || "Contains inappropriate language.";
     const segmentedReasons = normalizedReason
         .split(/\r?\n|\|/)
@@ -268,21 +313,15 @@ const buildModerationFieldErrors = (reason: string): ModerationFieldErrors => {
     const fieldErrors: ModerationFieldErrors = {};
 
     segmentedReasons.forEach((segment) => {
-        const normalizedSegment = segment.toLowerCase();
-
-        if (normalizedSegment.includes("topic") || normalizedSegment.includes("subject")) {
+        if (containsModerationFieldReference(segment, "topic")) {
             fieldErrors.topic = fieldErrors.topic ?? segment;
         }
 
-        if (normalizedSegment.includes("title") || normalizedSegment.includes("heading")) {
+        if (containsModerationFieldReference(segment, "title")) {
             fieldErrors.title = fieldErrors.title ?? segment;
         }
 
-        if (
-            normalizedSegment.includes("description") ||
-            normalizedSegment.includes("comment") ||
-            normalizedSegment.includes("body")
-        ) {
+        if (containsModerationFieldReference(segment, "description")) {
             fieldErrors.description = fieldErrors.description ?? segment;
         }
     });
@@ -291,7 +330,7 @@ const buildModerationFieldErrors = (reason: string): ModerationFieldErrors => {
         return fieldErrors;
     }
 
-    const rejectedField = inferRejectedFieldFromReason(normalizedReason);
+    const rejectedField = inferRejectedFieldFromReason(normalizedReason, fieldValues);
     return { [rejectedField]: normalizedReason };
 };
 
@@ -468,6 +507,17 @@ const InscriptionDetailsPage: React.FC = () => {
     const { isAuthenticated } = useContext(AuthContext);
 
     useEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+
+        const mainScrollContainer = document.querySelector(".flex-1.overflow-y-auto");
+        if (mainScrollContainer instanceof HTMLElement) {
+            mainScrollContainer.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        }
+    }, [postId, location.pathname]);
+
+    useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
             if (!hasUnsavedCommentEdits) return;
             event.preventDefault();
@@ -576,30 +626,40 @@ const InscriptionDetailsPage: React.FC = () => {
     }, [postId]);
 
     const submitRatingToAPI = async (postId: string, rating: number): Promise<string> => {
-
         const urlencoded = new URLSearchParams();
         urlencoded.append("postId", postId);
         urlencoded.append("rating", rating.toString());
-        const response = await coreBackendClient.post(`post/addRating`, urlencoded);
-        const { data } = response.data;
-        if (!data.ok) {
-            throw new Error(`Error: ${response.statusText}`);
+
+        const response = await coreBackendClient.post("post/addRating", urlencoded);
+        const body = response?.data;
+        const payload = unwrapApiData(body);
+        const success = resolveApiSuccess(body, payload);
+        if (!success) {
+            throw new Error(resolveApiMessage(body, payload, "Failed to submit rating."));
         }
-        const result = await data.message; // or response.json() if backend returns JSON
-        return result;
+
+        return resolveApiMessage(body, payload, "Rating submitted successfully.");
     };
 
 
 
     const handleRating = async (newRating: number) => {
+        const resolvedPostId = normalizeEntityId(postId) || normalizeEntityId(post?._id);
+        if (!resolvedPostId) {
+            throw new Error("Post id missing. Unable to submit rating.");
+        }
+
+        const previousUserRating = userRating;
+        const previousPostRating = Number(post?.rating ?? 0);
         setUserRating(newRating);
+        setPost((previous) => (previous ? { ...previous, rating: newRating } : previous));
+
         try {
-            await submitRatingToAPI(postId as string, newRating);
-            // Update post.rating in state so UI updates
-            setPost(prev => prev ? { ...prev, rating: newRating } : prev);
+            await submitRatingToAPI(resolvedPostId, newRating);
         } catch (error) {
-            console.error('Failed to submit rating:', error);
-            // Optionally show error to user
+            setUserRating(previousUserRating);
+            setPost((previous) => (previous ? { ...previous, rating: previousPostRating } : previous));
+            throw new Error(resolveRequestErrorMessage(error, "Failed to submit rating."));
         }
     };
 
@@ -1255,7 +1315,13 @@ const InscriptionDetailsPage: React.FC = () => {
             const moderationReason = extractModerationReason(message);
 
             if (moderationReason) {
-                setEditPostModerationErrors(buildModerationFieldErrors(moderationReason));
+                setEditPostModerationErrors(
+                    buildModerationFieldErrors(moderationReason, {
+                        title: trimmedTitle,
+                        topic: trimmedTopic,
+                        description: trimmedDescription,
+                    })
+                );
                 handlePostError("Please remove inappropriate language from the highlighted fields.");
             } else {
                 handlePostError(message);
@@ -1645,7 +1711,7 @@ const InscriptionDetailsPage: React.FC = () => {
                                     </span>
                                 </span>                            </div>
 
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex items-center justify-between gap-2 text-[#000000] min-w-0">
                                     <div className='flex gap-3'>
                                         <MapPin className="w-5 h-5 text-[#000000] shrink-0" />
@@ -1653,7 +1719,7 @@ const InscriptionDetailsPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                                <div className="flex items-center gap-2 sm:justify-end">
                                     <button
                                         onClick={() => setShowRatingModal(true)}
                                         className="md:px-6 md:py-2 px-3 py-1 cursor-pointer bg-orange-500 border-1 border-orange-800 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
@@ -1700,6 +1766,7 @@ const InscriptionDetailsPage: React.FC = () => {
                                                 anchorEl={postActionAnchorEl}
                                                 open={isPostActionMenuOpen}
                                                 onClose={handleClosePostActionMenu}
+                                                className=''
                                             >
                                                 {isPostAuthor ? (
                                                     [
@@ -1757,14 +1824,14 @@ const InscriptionDetailsPage: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => setIsDescriptionExpanded((previous) => !previous)}
-                                                className="mb-4 text-sm font-medium text-orange-500 hover:text-blue-800 underline cursor-pointer"
+                                                className="mb-4 text-sm font-medium text-orange-500 hover:text-orange-700 underline cursor-pointer"
                                             >
                                                 {isDescriptionExpanded ? "See less" : "See more"}
                                             </button>
                                         )}
 
                                         {/* Metadata */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                                             <div className="flex items-center gap-2 cursor-pointer">
                                                 <Languages className="w-4 h-4" />
                                                 {normalizedScriptValues.length > 0 ? (
@@ -1788,7 +1855,7 @@ const InscriptionDetailsPage: React.FC = () => {
                                                 {normalizedLanguageValues.length > 0 ? (
                                                     (() => {
                                                         const joined = normalizedLanguageValues.join(', ');
-                                                        return joined.length < 20 ? (
+                                                        return joined.length < 30 ? (
                                                             <span>Language: {joined.charAt(0).toUpperCase() + joined.slice(1)}</span>
                                                         ) : (
                                                             <Tooltip title={joined.charAt(0).toUpperCase() + joined.slice(1)} placement="top">
@@ -1807,7 +1874,7 @@ const InscriptionDetailsPage: React.FC = () => {
                                                 <div className="flex items-center gap-2 cursor-pointer">
                                                     <Calendar className="w-4 h-4" />
                                                     {postToRender.type ? (
-                                                        postToRender.type.length < 20 ? (
+                                                        postToRender.type.length < 30 ? (
                                                             <span>
                                                                 Type: {postToRender.type.charAt(0).toUpperCase() + postToRender.type.slice(1)}
                                                             </span>
@@ -1827,7 +1894,7 @@ const InscriptionDetailsPage: React.FC = () => {
                                             <div className="flex items-center gap-2 cursor-pointer">
                                                 <MessageSquareWarning className="w-4 h-4" />
                                                 {postToRender.topic ? (
-                                                    postToRender.topic.length < 20 ? (
+                                                    postToRender.topic.length < 30 ? (
                                                         <span>
                                                             Topic: {postToRender.topic.charAt(0).toUpperCase() + postToRender.topic.slice(1)}
                                                         </span>

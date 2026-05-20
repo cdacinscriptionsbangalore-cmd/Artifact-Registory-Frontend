@@ -12,6 +12,25 @@ export const useNavbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const isMobileViewport = window.matchMedia("(max-width: 768px)").matches;
+    if (!isMobileViewport) return;
+
+    const shouldLockScroll = mobileNavbarOpen || isClosing;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    if (shouldLockScroll) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [mobileNavbarOpen, isClosing]);
+
   const toggleMobileNavbar = () => {
     if (mobileNavbarOpen) {
       setIsClosing(true);

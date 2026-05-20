@@ -31,6 +31,7 @@ import { getEnvConfig } from "../config/env";
 import getCurrentLocation from "../utils/Camera/getCurrentLocation";
 import verifyGPSInImage from "../utils/GPS/verifyGPSInImage";
 import { suggestionApiClient } from "@/utils/http/clients/suggestionApi.client";
+import { CreateNewFolderOutlined } from "@mui/icons-material";
 
 const isOnline = true; // true => validate with AI, false => skip AI validation only
 const MAX_IMAGES = 20;
@@ -74,6 +75,75 @@ const parseCommaSeparatedInput = (value: string) =>
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+
+const ANCIENT_INDIAN_LANGUAGE_OPTIONS = [
+  "Vedic Sanskrit",
+  "Classical Sanskrit",
+  "Pali",
+  "Ardhamagadhi Prakrit",
+  "Maharashtri Prakrit",
+  "Sauraseni Prakrit",
+  "Magadhi Prakrit",
+  "Apabhramsha",
+  "Old Tamil",
+  "Old Kannada",
+  "Old Telugu",
+  "Old Malayalam",
+  "Tulu",
+  "Paisaci",
+];
+
+const ANCIENT_INDIAN_SCRIPT_OPTIONS = [
+  "Brahmi",
+  "Tamil-Brahmi",
+  "Kharosthi",
+  "Bhattiprolu",
+  "Gupta",
+  "Siddham",
+  "Nagari",
+  "Nandinagari",
+  "Grantha",
+  "Vatteluttu",
+  "Kadamba",
+  "Telugu-Kannada",
+  "Sharada",
+  "Bengali-Assamese",
+  "Odia",
+];
+
+const TYPEAHEAD_SUGGESTION_LIMIT = 6;
+
+const getActiveCommaSeparatedToken = (input: string): string => {
+  const lastCommaIndex = input.lastIndexOf(",");
+  const token = lastCommaIndex >= 0 ? input.slice(lastCommaIndex + 1) : input;
+  return token.trim();
+};
+
+const getSuggestionsForCommaSeparatedInput = (input: string, options: string[]): string[] => {
+  const query = getActiveCommaSeparatedToken(input).toLowerCase();
+  if (!query) return [];
+
+  const selectedValues = new Set(
+    parseCommaSeparatedInput(input).map((value) => value.toLowerCase())
+  );
+
+  return options
+    .filter((option) => {
+      const normalizedOption = option.toLowerCase();
+      return normalizedOption.includes(query) && !selectedValues.has(normalizedOption);
+    })
+    .slice(0, TYPEAHEAD_SUGGESTION_LIMIT);
+};
+
+const replaceActiveCommaSeparatedToken = (input: string, suggestion: string): string => {
+  const lastCommaIndex = input.lastIndexOf(",");
+  if (lastCommaIndex < 0) {
+    return suggestion;
+  }
+
+  const committed = parseCommaSeparatedInput(input.slice(0, lastCommaIndex));
+  return [...committed, suggestion].join(", ");
+};
 
 const normalizeCoordinate = (value: unknown): string | null => {
   if (typeof value === "number") {
@@ -192,6 +262,7 @@ const resolveApiMessage = (body: any, payload: any, fallback: string): string =>
 };
 
 type ModerationFieldName = "topic" | "title" | "description";
+type SuggestionFieldName = "language" | "script";
 
 const extractErrorMessageFromPayload = (payload: unknown): string | null => {
   if (!payload || typeof payload !== "object") return null;
@@ -320,6 +391,10 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
   >("info");
   const [snackbarMessage, setSnackbarMessage] = useState<string>("");
   const [snackbarKey, setSnackbarKey] = useState(0);
+  const [activeSuggestionField, setActiveSuggestionField] = useState<{
+    groupId: string;
+    field: SuggestionFieldName;
+  } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadLockRef = useRef(false);
@@ -742,6 +817,30 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
     setSelectedImageIds([]);
   };
 
+  const handleDiscardSelectedUngrouped = () => {
+    const selectedUngroupedIds = new Set(
+      ungroupedImages
+        .filter((image) => selectedImageIds.includes(image.id))
+        .map((image) => image.id)
+    );
+
+    if (selectedUngroupedIds.size === 0) {
+      setError("Select ungrouped images to discard.");
+      return;
+    }
+
+    setUngroupedImages((previous) =>
+      previous.filter((image) => !selectedUngroupedIds.has(image.id))
+    );
+    setSelectedImageIds((previous) =>
+      previous.filter((id) => !selectedUngroupedIds.has(id))
+    );
+    showSnackbar(
+      "info",
+      `${selectedUngroupedIds.size} image${selectedUngroupedIds.size === 1 ? "" : "s"} discarded`
+    );
+  };
+
   const moveSelectedToUngrouped = (groupId: string) => {
     const selectedSet = new Set(selectedImageIds);
     const targetGroup = groups.find((group) => group.id === groupId);
@@ -1080,9 +1179,19 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                   type="button"
                   onClick={createGroupFromSelected}
                   disabled={selectedUngroupedCount === 0}
-                  className="mt-4 w-full sm:w-auto px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  className="mt-4 gap-2 cursor-pointer w-full sm:w-auto px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
+                  <CreateNewFolderOutlined size={18}/>
                   Create Group From Selected
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDiscardSelectedUngrouped}
+                  disabled={selectedUngroupedCount === 0}
+                  className="mt-4 gap-2 cursor-pointer w-full sm:w-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  <Trash2 size={18} />
+                  Discard Selected
                 </button>
                 <button
                   type="button"
@@ -1112,6 +1221,26 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                   const suggestion = groupSuggestions[group.id] || null;
                   const isFetchingSuggestion = groupSuggestionLoading[group.id] || false;
                   const showSuggestion = groupSuggestionVisibility[group.id] !== false;
+                  const languageInputValue = group.formData.language.join(", ");
+                  const scriptInputValue = group.formData.script.join(", ");
+                  const languageSuggestions = getSuggestionsForCommaSeparatedInput(
+                    languageInputValue,
+                    ANCIENT_INDIAN_LANGUAGE_OPTIONS
+                  );
+                  const scriptSuggestions = getSuggestionsForCommaSeparatedInput(
+                    scriptInputValue,
+                    ANCIENT_INDIAN_SCRIPT_OPTIONS
+                  );
+                  const isLanguageSuggestionOpen =
+                    !disableEdits &&
+                    activeSuggestionField?.groupId === group.id &&
+                    activeSuggestionField.field === "language" &&
+                    languageSuggestions.length > 0;
+                  const isScriptSuggestionOpen =
+                    !disableEdits &&
+                    activeSuggestionField?.groupId === group.id &&
+                    activeSuggestionField.field === "script" &&
+                    scriptSuggestions.length > 0;
 
                   return (
                     <article key={group.id} className="bg-white border border-gray-300 rounded-lg p-4">
@@ -1193,34 +1322,108 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                           disabled={disableEdits}
                           fullWidth
                         />
-                        <TextField
-                          label="Language (comma separated)"
-                          size="small"
-                          value={group.formData.language.join(", ")}
-                          onChange={(event) =>
-                            updateGroupFormData(
-                              group.id,
-                              "language",
-                              parseCommaSeparatedInput(event.target.value)
-                            )
-                          }
-                          disabled={disableEdits}
-                          fullWidth
-                        />
-                        <TextField
-                          label="Script (comma separated)"
-                          size="small"
-                          value={group.formData.script.join(", ")}
-                          onChange={(event) =>
-                            updateGroupFormData(
-                              group.id,
-                              "script",
-                              parseCommaSeparatedInput(event.target.value)
-                            )
-                          }
-                          disabled={disableEdits}
-                          fullWidth
-                        />
+                        <div className="relative">
+                          <TextField
+                            label="Language (comma separated)"
+                            size="small"
+                            value={languageInputValue}
+                            onChange={(event) =>
+                              updateGroupFormData(
+                                group.id,
+                                "language",
+                                parseCommaSeparatedInput(event.target.value)
+                              )
+                            }
+                            onFocus={() =>
+                              setActiveSuggestionField({
+                                groupId: group.id,
+                                field: "language",
+                              })
+                            }
+                            onBlur={() => {
+                              setActiveSuggestionField((previous) =>
+                                previous?.groupId === group.id && previous.field === "language"
+                                  ? null
+                                  : previous
+                              );
+                            }}
+                            disabled={disableEdits}
+                            fullWidth
+                          />
+                          {isLanguageSuggestionOpen && (
+                            <div className="absolute z-20 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg max-h-44 overflow-y-auto">
+                              {languageSuggestions.map((option) => (
+                                <button
+                                  key={`${group.id}-language-${option}`}
+                                  type="button"
+                                  onMouseDown={(event) => {
+                                    event.preventDefault();
+                                    const nextValue = replaceActiveCommaSeparatedToken(languageInputValue, option);
+                                    updateGroupFormData(
+                                      group.id,
+                                      "language",
+                                      parseCommaSeparatedInput(nextValue)
+                                    );
+                                  }}
+                                  className="block w-full px-3 py-2 text-left text-sm text-gray-800 hover:bg-orange-50 cursor-pointer"
+                                >
+                                  {option}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="relative">
+                          <TextField
+                            label="Script (comma separated)"
+                            size="small"
+                            value={scriptInputValue}
+                            onChange={(event) =>
+                              updateGroupFormData(
+                                group.id,
+                                "script",
+                                parseCommaSeparatedInput(event.target.value)
+                              )
+                            }
+                            onFocus={() =>
+                              setActiveSuggestionField({
+                                groupId: group.id,
+                                field: "script",
+                              })
+                            }
+                            onBlur={() => {
+                              setActiveSuggestionField((previous) =>
+                                previous?.groupId === group.id && previous.field === "script"
+                                  ? null
+                                  : previous
+                              );
+                            }}
+                            disabled={disableEdits}
+                            fullWidth
+                          />
+                          {isScriptSuggestionOpen && (
+                            <div className="absolute z-20 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg max-h-44 overflow-y-auto">
+                              {scriptSuggestions.map((option) => (
+                                <button
+                                  key={`${group.id}-script-${option}`}
+                                  type="button"
+                                  onMouseDown={(event) => {
+                                    event.preventDefault();
+                                    const nextValue = replaceActiveCommaSeparatedToken(scriptInputValue, option);
+                                    updateGroupFormData(
+                                      group.id,
+                                      "script",
+                                      parseCommaSeparatedInput(nextValue)
+                                    );
+                                  }}
+                                  className="block w-full px-3 py-2 text-left text-sm text-gray-800 hover:bg-orange-50 cursor-pointer"
+                                >
+                                  {option}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <TextField
                           select
                           label="Type"

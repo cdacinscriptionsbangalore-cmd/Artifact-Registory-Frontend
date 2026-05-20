@@ -54,7 +54,7 @@ const Statistics: React.FC = () => {
                         const IconComponent = stat.icon;
                         if (stat.label === "totalPosts") {
                             return (
-                                <NavLink to={`/feed`} key={index} className="">
+                                <NavLink to={`/feed`} key={index} className="" >
                                     <div className="ag-courses-item_link text-center p-6 bg-primary-background/50 rounded-xl backdrop-blur-sm border border-slate-700/50 secondary-text-dark ">
                                         <div className="ag-courses-item_bg" style={{ backgroundColor: `${stat.bgColor}` }}>
 
