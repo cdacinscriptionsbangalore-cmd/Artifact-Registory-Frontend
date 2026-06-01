@@ -30,6 +30,12 @@ const MainRoutes = {
       )
     },
     {
+      path: 'dashboard',
+      element: (
+        <Navigate to="/admin/dashboard" replace />
+      )
+    },
+    {
       path: 'feed',
       element: (
         <ProtectedRoute>
