@@ -296,6 +296,24 @@ const buildModerationSnackbarMessage = (
   return `topic: ${fieldStatus.topic} | title: ${fieldStatus.title} | description: ${fieldStatus.description}`;
 };
 
+type GpsCoordinateSource = "exif" | "ocr";
+
+const buildGpsStatusMessage = (
+  fileName: string,
+  source: GpsCoordinateSource,
+  coordinates: { latitude: string; longitude: string }
+) => {
+  const coordinateText = `lat= ${coordinates.latitude} ; long = ${coordinates.longitude}`;
+
+  if (source === "ocr") {
+    return `${fileName}: GPS location successfully obtained`;
+    // return `${fileName}: GPS location obtained using OCR : ${coordinateText}`;
+  }
+
+  // return `${fileName}: GPS location successfully obtained from EXIF data : ${coordinateText}`;
+  return `${fileName}: GPS location successfully obtained`;
+};
+
 const EnhancedInscriptionUploaderV5: React.FC = () => {
   const [currentStage, setCurrentStage] = useState<"upload" | "grouping">("upload");
   const [ungroupedImages, setUngroupedImages] = useState<ImageItem[]>([]);
@@ -481,9 +499,9 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
     if (hasGPS) {
 
       if (exifData?.GPS) {
-        // console.log(
-        //   "[EXIF] GPS found in image metadata"
-        // );
+        console.log(
+          "[EXIF] GPS found in image metadata"
+        );
         const coordinates = {
           latitude: exifData.GPS[piexifjs.GPSIFD.GPSLatitude],
           longitude: exifData.GPS[piexifjs.GPSIFD.GPSLongitude],
@@ -496,11 +514,11 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
       }
 
       if (exifData?.OCR) {
-        // console.log(
-        //   "[OCR] GeoInfo updated",
-        //   exifData.OCR.latitude,
-        //   exifData.OCR.longitude
-        // );
+        console.log(
+          "[OCR] GeoInfo updated",
+          exifData.OCR.latitude,
+          exifData.OCR.longitude
+        );
         setGeoInfo({
           latitude: exifData.OCR.latitude,
           longitude: exifData.OCR.longitude,
@@ -621,6 +639,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
 
     const pendingImages: ImageItem[] = [];
     const messages: string[] = [];
+    const gpsStatusMessages: string[] = [];
     let gpsCoordinateFromBatch: { latitude: string; longitude: string } | null = null;
 
     for (const file of Array.from(files)) {
@@ -638,24 +657,38 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
         }
 
         const gpsResult = verifyGPSInImage(preview);
+        let gpsCoordinateSource: GpsCoordinateSource | null = null;
+        let gpsCoordinatesForMessage: { latitude: string; longitude: string } | null = null;
 
         if (gpsResult.hasGPS) {
           updateGeoInfo(
             gpsResult.allExif,
             true
           );
+
+          const gpsLatitude = normalizeCoordinate(gpsResult.coordinates?.lat);
+          const gpsLongitude = normalizeCoordinate(gpsResult.coordinates?.lon);
+
+          if (gpsLatitude && gpsLongitude) {
+            gpsCoordinateFromBatch = {
+              latitude: gpsLatitude,
+              longitude: gpsLongitude,
+            };
+            gpsCoordinatesForMessage = gpsCoordinateFromBatch;
+            gpsCoordinateSource = "exif";
+          }
         } else {
           try {
-            // console.log(
-            //   "[OCR] No EXIF GPS found. Falling back to OCR.",
-            //   file.name
-            // );
+            console.log(
+              "[OCR] No EXIF GPS found. Falling back to OCR.",
+              file.name
+            );
             const ocrResult =
               await extractCoordinates(file);
-            // console.log(
-            //   "[OCR] Response:",
-            //   ocrResult
-            // );
+            console.log(
+              "[OCR] Response:",
+              ocrResult
+            );
             if (
               ocrResult?.success &&
               ocrResult.latitude != null &&
@@ -665,11 +698,12 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                 latitude: String(ocrResult.latitude),
                 longitude: String(ocrResult.longitude),
               };
+              gpsCoordinatesForMessage = gpsCoordinateFromBatch;
 
-              // console.log(
-              //   "[OCR] Coordinates extracted:",
-              //   gpsCoordinateFromBatch
-              // );
+              console.log(
+                "[OCR] Coordinates extracted:",
+                gpsCoordinateFromBatch
+              );
               updateGeoInfo(
                 {
                   OCR: {
@@ -679,6 +713,8 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                 },
                 true
               );
+
+              gpsCoordinateSource = "ocr";
             } else {
               updateGeoInfo(
                 gpsResult.allExif,
@@ -706,12 +742,16 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
             );
           }
         }
-        const gpsLatitude = normalizeCoordinate(gpsResult.coordinates?.lat);
-        const gpsLongitude = normalizeCoordinate(gpsResult.coordinates?.lon);
 
-        if (gpsLatitude && gpsLongitude) {
-          gpsCoordinateFromBatch = { latitude: gpsLatitude, longitude: gpsLongitude };
-        } else {
+        if (gpsCoordinateSource) {
+          gpsStatusMessages.push(
+            buildGpsStatusMessage(
+              file.name,
+              gpsCoordinateSource,
+              gpsCoordinatesForMessage || gpsCoordinateFromBatch
+            )
+          );
+        } else if (gpsResult.hasGPS) {
           messages.push(`${file.name}: no GPS data found`);
         }
 
@@ -751,6 +791,8 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
 
     if (messages.length > 0) {
       setError(messages.join(" | "));
+    } else if (gpsStatusMessages.length > 0) {
+      showSnackbar("success", gpsStatusMessages.join(" | "));
     }
 
     event.target.value = "";
@@ -1538,7 +1580,12 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
         TransitionComponent={SlideDownTransition}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: "100%" }}>
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbarSeverity}
+          // variant="filled"
+          sx={{ width: "100%" }}
+        >
           {snackbarMessage.split(" | ").map((line, index) => (
             <div key={index}>{line}</div>
           ))}
