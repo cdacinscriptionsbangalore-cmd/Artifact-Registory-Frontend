@@ -72,6 +72,9 @@ export const refreshTokenInterceptor = (client: AxiosInstance) => {
           });
           authStore.clear();
           try {
+            // console.error(
+            //   "[AUTH] Unauthorized dispatched from refreshToken.interceptor"
+            // );
             window.dispatchEvent(new CustomEvent('app:unauthorized'));
           } catch (e) {
             window.location.href = "/login";

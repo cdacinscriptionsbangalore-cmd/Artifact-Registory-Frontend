@@ -7,6 +7,10 @@ const dispatchUnauthorized = () => {
   if (hasDispatchedUnauthorized) return;
   hasDispatchedUnauthorized = true;
   try {
+    // console.error(
+    //   "[AUTH] Unauthorized dispatched from authRequest.interceptor"
+    // );
+
     window.dispatchEvent(new CustomEvent("app:unauthorized"));
   } catch {
     window.location.href = "/login";

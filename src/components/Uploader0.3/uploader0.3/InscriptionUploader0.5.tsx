@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
+
 import {
   Alert,
   CircularProgress,
-  FormControlLabel,
-  FormLabel,
+  // FormControlLabel,
+  // FormLabel,
   MenuItem,
-  Radio,
-  RadioGroup,
+  // Radio,
+  // RadioGroup,
   Slide,
   Snackbar,
   TextField,
@@ -27,10 +28,13 @@ import { CameraView } from "../components/CameraView";
 import SuggestionControls from "../components/SuggestionControls";
 import { useCamera } from "../hooks/UseCamera";
 import type { GeoInfo } from "../types/types";
-import { getEnvConfig } from "../config/env";
+// import { getEnvConfig } from "../config/env";
 import getCurrentLocation from "../utils/Camera/getCurrentLocation";
 import verifyGPSInImage from "../utils/GPS/verifyGPSInImage";
+import embedGPSIntoImage from "../utils/GPS/embedGPSIntoImage";
+import { extractCoordinates } from "../Services/ocrService";
 import { suggestionApiClient } from "@/utils/http/clients/suggestionApi.client";
+import piexifjs from "piexifjs";
 
 const isOnline = true; // true => validate with AI, false => skip AI validation only
 const MAX_IMAGES = 20;
@@ -113,6 +117,29 @@ const dataUrlToFile = async (dataUrl: string, fileName: string) => {
   return new File([blob], fileName, {
     type: blob.type || "image/jpeg",
   });
+};
+
+const embedGpsCoordinatesInFile = async (
+  imageDataUrl: string,
+  file: File,
+  latitude: number,
+  longitude: number
+): Promise<File> => {
+  if (!imageDataUrl.startsWith("data:image/jpeg;base64,")) {
+    console.warn("Cannot embed GPS EXIF into non-JPEG image:", file.name);
+    return file;
+  }
+
+  try {
+    const updatedDataUrl = embedGPSIntoImage(imageDataUrl, latitude, longitude, new Date());
+    if (updatedDataUrl === imageDataUrl) {
+      return file;
+    }
+    return await dataUrlToFile(updatedDataUrl, file.name);
+  } catch (error) {
+    console.error("Failed to embed GPS coordinates into file:", error);
+    return file;
+  }
 };
 
 const rotateImageDataUrl = (dataUrl: string, degrees = 90): Promise<string> =>
@@ -293,6 +320,22 @@ const buildModerationSnackbarMessage = (
   return `topic: ${fieldStatus.topic} | title: ${fieldStatus.title} | description: ${fieldStatus.description}`;
 };
 
+type GpsCoordinateSource = "exif" | "ocr";
+
+const buildGpsStatusMessage = (
+  fileName: string,
+  source: GpsCoordinateSource,
+  coordinates: { latitude: string; longitude: string }
+) => {
+  const coordinateText = `lat=${coordinates.latitude}; long=${coordinates.longitude}`;
+
+  if (source === "ocr") {
+    return `${fileName}: GPS location successfully obtained (${coordinateText})`;
+  }
+
+  return `${fileName}: GPS location successfully obtained (${coordinateText})`;
+};
+
 const EnhancedInscriptionUploaderV5: React.FC = () => {
   const [currentStage, setCurrentStage] = useState<"upload" | "grouping">("upload");
   const [ungroupedImages, setUngroupedImages] = useState<ImageItem[]>([]);
@@ -301,7 +344,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
-  const [hasGeoData, setHasGeoData] = useState<boolean | null>(null);
+  const [, setHasGeoData] = useState<boolean | null>(null);
   const [geoInfo, setGeoInfo] = useState<GeoInfo | null>(null);
   const [isCheckingStone, setIsCheckingStone] = useState(false);
   const [stoneCheckResult, setStoneCheckResult] = useState<string | null>(null);
@@ -425,54 +468,93 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
   };
 
   const fetchGroupSuggestion = async (groupId: string, lat?: string, lon?: string) => {
-  setGroupSuggestions((previous) => ({ ...previous, [groupId]: null }));
-  setGroupSuggestionVisibility((previous) => ({ ...previous, [groupId]: true }));
-  setGroupSuggestionLoading((previous) => ({ ...previous, [groupId]: true }));
+    setGroupSuggestions((previous) => ({ ...previous, [groupId]: null }));
+    setGroupSuggestionVisibility((previous) => ({ ...previous, [groupId]: true }));
+    setGroupSuggestionLoading((previous) => ({ ...previous, [groupId]: true }));
 
-  try {
-    const latitude = lat || geoInfo?.latitude;
-    const longitude = lon || geoInfo?.longitude;
-    let normalizedLatitude = normalizeCoordinate(latitude);
-    let normalizedLongitude = normalizeCoordinate(longitude);
+    try {
+      const latitude = lat || geoInfo?.latitude;
+      const longitude = lon || geoInfo?.longitude;
+      let normalizedLatitude = normalizeCoordinate(latitude);
+      let normalizedLongitude = normalizeCoordinate(longitude);
 
-    if (!normalizedLatitude || !normalizedLongitude) {
-      const location = await getCurrentLocation();
-      normalizedLatitude = normalizeCoordinate(location.latitude);
-      normalizedLongitude = normalizeCoordinate(location.longitude);
+      if (!normalizedLatitude || !normalizedLongitude) {
+        const location = await getCurrentLocation();
+        normalizedLatitude = normalizeCoordinate(location.latitude);
+        normalizedLongitude = normalizeCoordinate(location.longitude);
+      }
+
+      if (!normalizedLatitude || !normalizedLongitude) {
+        throw new Error("No coordinates available");
+      }
+
+      // Flat POST body — no wrapping, numbers not strings
+      const response = await suggestionApiClient.post("", {
+        lat: Number(normalizedLatitude),
+        lon: Number(normalizedLongitude),
+      });
+
+      const outer = response.data;
+      let text = "";
+
+      if (outer?.text) {
+        // text is already a plain string — no JSON.parse needed
+        text = outer.text;
+      } else {
+        text = outer?.description || outer?.suggestion || "";
+      }
+
+      if (!text) throw new Error("No suggestion returned");
+
+      setGroupSuggestions((previous) => ({ ...previous, [groupId]: text }));
+    } catch {
+      setGroupSuggestions((previous) => ({
+        ...previous,
+        [groupId]: "Failed to get suggestion.",
+      }));
+    } finally {
+      setGroupSuggestionLoading((previous) => ({ ...previous, [groupId]: false }));
+    }
+  };
+
+  const updateGeoInfo = (exifData: any, hasGPS: boolean) => {
+    if (hasGPS) {
+
+      if (exifData?.GPS) {
+        console.log(
+          "[EXIF] GPS found in image metadata"
+        );
+        const coordinates = {
+          latitude: exifData.GPS[piexifjs.GPSIFD.GPSLatitude],
+          longitude: exifData.GPS[piexifjs.GPSIFD.GPSLongitude],
+          timestamp: exifData.GPS[piexifjs.GPSIFD.GPSTimeStamp],
+        };
+
+        setHasGeoData(true);
+        setGeoInfo({ ...coordinates, hasGPS: true });
+        return;
+      }
+
+      if (exifData?.OCR) {
+        console.log(
+          "[OCR] GeoInfo updated",
+          exifData.OCR.latitude,
+          exifData.OCR.longitude
+        );
+        setGeoInfo({
+          latitude: exifData.OCR.latitude,
+          longitude: exifData.OCR.longitude,
+          hasGPS: true,
+        });
+
+        setHasGeoData(true);
+        return;
+      }
     }
 
-    if (!normalizedLatitude || !normalizedLongitude) {
-      throw new Error("No coordinates available");
-    }
+    setHasGeoData(false);
+  };
 
-    // Flat POST body — no wrapping, numbers not strings
-    const response = await suggestionApiClient.post("", {
-      lat: Number(normalizedLatitude),
-      lon: Number(normalizedLongitude),
-    });
-
-    const outer = response.data;
-    let text = "";
-
-    if (outer?.text) {
-      // text is already a plain string — no JSON.parse needed
-      text = outer.text;
-    } else {
-      text = outer?.description || outer?.suggestion || "";
-    }
-
-    if (!text) throw new Error("No suggestion returned");
-
-    setGroupSuggestions((previous) => ({ ...previous, [groupId]: text }));
-  } catch {
-    setGroupSuggestions((previous) => ({
-      ...previous,
-      [groupId]: "Failed to get suggestion.",
-    }));
-  } finally {
-    setGroupSuggestionLoading((previous) => ({ ...previous, [groupId]: false }));
-  }
-};
 
   const checkStone = async (imageDataUrl: string): Promise<boolean> => {
     if (!isOnline) {
@@ -579,6 +661,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
 
     const pendingImages: ImageItem[] = [];
     const messages: string[] = [];
+    const gpsStatusMessages: string[] = [];
     let gpsCoordinateFromBatch: { latitude: string; longitude: string } | null = null;
 
     for (const file of Array.from(files)) {
@@ -587,8 +670,10 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
         break;
       }
 
+      let processedFile: File = file;
+
       try {
-        const preview = await readFileAsDataUrl(file);
+        const preview = await readFileAsDataUrl(processedFile);
         const isStone = await checkStone(preview);
         if (!isStone) {
           messages.push(`${file.name}: not a stone inscription`);
@@ -596,18 +681,118 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
         }
 
         const gpsResult = verifyGPSInImage(preview);
-        const gpsLatitude = normalizeCoordinate(gpsResult.coordinates?.lat);
-        const gpsLongitude = normalizeCoordinate(gpsResult.coordinates?.lon);
+        let gpsCoordinateSource: GpsCoordinateSource | null = null;
+        let gpsCoordinatesForMessage: { latitude: string; longitude: string } | null = null;
 
-        if (gpsLatitude && gpsLongitude) {
-          gpsCoordinateFromBatch = { latitude: gpsLatitude, longitude: gpsLongitude };
+        if (gpsResult.hasGPS) {
+          updateGeoInfo(
+            gpsResult.allExif,
+            true
+          );
+
+          const gpsLatitude = normalizeCoordinate(gpsResult.coordinates?.lat);
+          const gpsLongitude = normalizeCoordinate(gpsResult.coordinates?.lon);
+
+          if (gpsLatitude && gpsLongitude) {
+            gpsCoordinateFromBatch = {
+              latitude: gpsLatitude,
+              longitude: gpsLongitude,
+            };
+            gpsCoordinatesForMessage = gpsCoordinateFromBatch;
+            gpsCoordinateSource = "exif";
+          }
         } else {
+          try {
+            console.log(
+              "[OCR] No EXIF GPS found. Falling back to OCR.",
+              file.name
+            );
+            const ocrResult =
+              await extractCoordinates(file);
+            console.log(
+              "[OCR] Response:",
+              ocrResult
+            );
+            if (
+              ocrResult?.success &&
+              ocrResult.latitude != null &&
+              ocrResult.longitude != null
+            ) {
+              gpsCoordinateFromBatch = {
+                latitude: String(ocrResult.latitude),
+                longitude: String(ocrResult.longitude),
+              };
+              gpsCoordinatesForMessage = gpsCoordinateFromBatch;
+
+              try {
+                processedFile = await embedGpsCoordinatesInFile(
+                  preview,
+                  processedFile,
+                  ocrResult.latitude,
+                  ocrResult.longitude
+                );
+              } catch (error) {
+                console.error("Failed to write OCR GPS into EXIF:", error);
+              }
+
+              console.log(
+                "[OCR] Coordinates extracted:",
+                gpsCoordinateFromBatch
+              );
+              updateGeoInfo(
+                {
+                  OCR: {
+                    latitude: ocrResult.latitude,
+                    longitude: ocrResult.longitude,
+                  },
+                },
+                true
+              );
+
+              gpsCoordinateSource = "ocr";
+            } else {
+              updateGeoInfo(
+                gpsResult.allExif,
+                false
+              );
+
+              messages.push(
+                `${file.name}: no GPS data found`
+              );
+            }
+          } catch (error) {
+
+            console.error(
+              "[OCR] Failed:",
+              error
+            );
+
+            updateGeoInfo(
+              gpsResult.allExif,
+              false
+            );
+
+            messages.push(
+              `${file.name}: no GPS data found`
+            );
+          }
+        }
+
+        if (gpsCoordinateSource) {
+          gpsStatusMessages.push(
+            buildGpsStatusMessage(
+              file.name,
+              gpsCoordinateSource,
+              gpsCoordinatesForMessage || gpsCoordinateFromBatch!
+            )
+          );
+        } else if (gpsResult.hasGPS) {
           messages.push(`${file.name}: no GPS data found`);
         }
 
         pendingImages.push({
           id: createImageId(),
-          file,
+          file: processedFile,
           preview,
         });
       } catch {
@@ -641,6 +826,8 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
 
     if (messages.length > 0) {
       setError(messages.join(" | "));
+    } else if (gpsStatusMessages.length > 0) {
+      showSnackbar("success", gpsStatusMessages.join(" | "));
     }
 
     event.target.value = "";
@@ -1428,7 +1615,12 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
         TransitionComponent={SlideDownTransition}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: "100%" }}>
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbarSeverity}
+          // variant="filled"
+          sx={{ width: "100%" }}
+        >
           {snackbarMessage.split(" | ").map((line, index) => (
             <div key={index}>{line}</div>
           ))}

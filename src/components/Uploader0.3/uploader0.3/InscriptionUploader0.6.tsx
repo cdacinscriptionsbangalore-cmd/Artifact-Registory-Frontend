@@ -24,7 +24,7 @@ import { GPSStatus } from "../components/GPSStatus";
 import { useCamera } from "../hooks/UseCamera";
 import type { GeoInfo } from "../types/types";
 import verifyGPSInImage from "../utils/GPS/verifyGPSInImage";
-
+import { extractCoordinates } from "../Services/ocrService";
 const isOnline = true; // true => validate with AI, false => skip AI validation only
 
 interface ImageItem {
@@ -123,16 +123,30 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
   };
 
   const updateGeoInfo = (exifData: any, hasGPS: boolean) => {
-    if (hasGPS && exifData?.GPS) {
-      const coordinates = {
-        latitude: exifData.GPS[piexifjs.GPSIFD.GPSLatitude],
-        longitude: exifData.GPS[piexifjs.GPSIFD.GPSLongitude],
-        timestamp: exifData.GPS[piexifjs.GPSIFD.GPSTimeStamp],
-      };
+    if (hasGPS) {
 
-      setHasGeoData(true);
-      setGeoInfo({ ...coordinates, hasGPS: true });
-      return;
+      if (exifData?.GPS) {
+        const coordinates = {
+          latitude: exifData.GPS[piexifjs.GPSIFD.GPSLatitude],
+          longitude: exifData.GPS[piexifjs.GPSIFD.GPSLongitude],
+          timestamp: exifData.GPS[piexifjs.GPSIFD.GPSTimeStamp],
+        };
+
+        setHasGeoData(true);
+        setGeoInfo({ ...coordinates, hasGPS: true });
+        return;
+      }
+
+      if (exifData?.OCR) {
+        setGeoInfo({
+          latitude: exifData.OCR.latitude,
+          longitude: exifData.OCR.longitude,
+          hasGPS: true,
+        });
+
+        setHasGeoData(true);
+        return;
+      }
     }
 
     setHasGeoData(false);
@@ -227,10 +241,60 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
         }
 
         const gpsResult = verifyGPSInImage(preview);
-        updateGeoInfo(gpsResult.allExif, gpsResult.hasGPS);
 
-        if (!gpsResult.hasGPS) {
-          messages.push(`${file.name}: no GPS data found`);
+        if (gpsResult.hasGPS) {
+
+          updateGeoInfo(
+            gpsResult.allExif,
+            true
+          );
+          console.log("Using EXIF coordinates");
+        } else {
+
+          try {
+
+            const ocrResult =
+              await extractCoordinates(file);
+
+            if (
+              ocrResult?.success &&
+              ocrResult.latitude != null &&
+              ocrResult.longitude != null
+            ) {
+
+              updateGeoInfo(
+                {
+                  OCR: {
+                    latitude: ocrResult.latitude,
+                    longitude: ocrResult.longitude,
+                  },
+                },
+                true
+              );
+              console.log("Using OCR fallback coordinates");
+            } else {
+
+              updateGeoInfo(
+                gpsResult.allExif,
+                false
+              );
+
+              messages.push(
+                `${file.name}: no GPS data found`
+              );
+            }
+
+          } catch {
+
+            updateGeoInfo(
+              gpsResult.allExif,
+              false
+            );
+
+            messages.push(
+              `${file.name}: no GPS data found`
+            );
+          }
         }
 
         pendingImages.push({

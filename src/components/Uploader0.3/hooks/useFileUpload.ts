@@ -1,3 +1,4 @@
+import { extractCoordinates } from "../Services/ocrService";
 import extractEXIFData from "../utils/Camera/extractEXIFData";
 import verifyGPSInImage from '../utils/GPS/verifyGPSInImage';
 
@@ -38,11 +39,57 @@ export const useFileUpload = (
 
         // Only process GPS data if it's a valid stone inscription
         const gpsResult = verifyGPSInImage(imageDataUrl);
-        onFileUploadData(gpsResult.allExif, gpsResult.hasGPS);
 
-        if (!gpsResult.hasGPS) {
-          // errorMessages.push(`Warning: No GPS data found in image ${file.name}`);
-          errorMessages.push(`Warning: No GPS data found in one or more uploaded files`);
+        if (gpsResult.hasGPS) {
+          onFileUploadData(
+            gpsResult.allExif,
+            true
+          );
+        } else {
+
+          try {
+            const ocrResult =
+              await extractCoordinates(file);
+
+            if (
+              ocrResult?.success &&
+              ocrResult.latitude != null &&
+              ocrResult.longitude != null
+            ) {
+
+              onFileUploadData(
+                {
+                  OCR: {
+                    latitude: ocrResult.latitude,
+                    longitude: ocrResult.longitude,
+                  },
+                },
+                true
+              );
+
+            } else {
+
+              onFileUploadData(
+                gpsResult.allExif,
+                false
+              );
+
+              errorMessages.push(
+                "Warning: No GPS data found"
+              );
+            }
+
+          } catch {
+
+            onFileUploadData(
+              gpsResult.allExif,
+              false
+            );
+
+            errorMessages.push(
+              "Warning: No GPS data found"
+            );
+          }
         }
 
         newPhotos.push(imageDataUrl);

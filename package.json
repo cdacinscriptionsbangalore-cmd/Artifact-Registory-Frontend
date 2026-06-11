@@ -51,7 +51,8 @@
     "serve": "^14.2.4",
     "simple-parallax-js": "^6.3.3",
     "styled-components": "^6.2.0",
-    "swiper": "^12.1.2"
+    "swiper": "^12.1.2",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

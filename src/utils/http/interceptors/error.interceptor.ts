@@ -7,6 +7,9 @@ export const errorInterceptor = (client: AxiosInstance) => {
       if (error.response?.status === 401) {
         // Dispatch a global event so React context can handle logout and UI updates
         try {
+          // console.error(
+          //   "[AUTH] Unauthorized dispatched from error.interceptor"
+          // );
           window.dispatchEvent(new CustomEvent('app:unauthorized'));
         } catch (e) {
           // fallback to hard navigation if CustomEvent is not supported

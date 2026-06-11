@@ -5,6 +5,8 @@ import { authClient } from "@/utils/http/clients/authClient.client";
 import { apiClient } from "@/utils/http/clients/backendApiClientGeneral";
 import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
 
+const DEV_BYPASS_AUTH = false;
+
 type AuthContextType = {
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -16,7 +18,8 @@ const AuthContext = createContext<AuthContextType>(null!);
 const AUTH_SYNC_STORAGE_KEY = "auth:sync-event";
 
 export const AuthProvider = (props: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(DEV_BYPASS_AUTH);
   const [isLoading, setIsLoading] = useState(true);
   const hasLoginSucceededRef = useRef(false);
   const hasForcedLogoutRef = useRef(false);
@@ -120,6 +123,9 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    if (DEV_BYPASS_AUTH) {
+      return;
+    }
     const bootstrap = async () => {
       setIsLoading(true);
       try {
