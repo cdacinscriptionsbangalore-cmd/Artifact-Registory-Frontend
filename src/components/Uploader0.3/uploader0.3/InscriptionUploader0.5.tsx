@@ -35,6 +35,7 @@ import embedGPSIntoImage from "../utils/GPS/embedGPSIntoImage";
 import { extractCoordinates } from "../Services/ocrService";
 import { suggestionApiClient } from "@/utils/http/clients/suggestionApi.client";
 import piexifjs from "piexifjs";
+import { normalizeCoordinate } from "./utils/normalizeCoordinate";
 
 const isOnline = true; // true => validate with AI, false => skip AI validation only
 const MAX_IMAGES = 20;
@@ -78,26 +79,6 @@ const parseCommaSeparatedInput = (value: string) =>
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
-
-const normalizeCoordinate = (value: unknown): string | null => {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value.toString() : null;
-  }
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-
-    const normalized = trimmed.includes(",") && !trimmed.includes(".")
-      ? trimmed.replace(",", ".")
-      : trimmed;
-
-    const parsed = Number(normalized);
-    return Number.isFinite(parsed) ? parsed.toString() : null;
-  }
-
-  return null;
-};
 
 function SlideDownTransition(props: SlideProps) {
   return <Slide {...props} direction="down" />;
