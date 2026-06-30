@@ -11,7 +11,7 @@ interface VerifyResult {
   allExif?: any;
 }
 
-const verifyGPSInImage = (imageDataUrl: string): VerifyResult => {
+export const verifyGPSInImage = (imageDataUrl: string): VerifyResult => {
   try {
     // console.log('🔍 Starting EXIF metadata extraction...');
 

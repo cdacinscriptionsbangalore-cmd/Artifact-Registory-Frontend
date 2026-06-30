@@ -8,7 +8,7 @@ export const extractEXIFData = (file: File): Promise<GeoInfo | null> => {
       const dataView = new DataView(arrayBuffer);
       
       let offset = 2;
-      const maxOffset = Math.min(65535, dataView.byteLength);
+      const maxOffset = Math.min(65535, dataView.byteLength)-4;
       
       while (offset < maxOffset) {
         const marker = dataView.getUint16(offset);
@@ -27,7 +27,7 @@ export const extractEXIFData = (file: File): Promise<GeoInfo | null> => {
   });
 };
 
-const parseEXIFForGPS = (dataView: DataView): GeoInfo | null => {
+export const parseEXIFForGPS = (dataView: DataView): GeoInfo | null => {
   try {
     const exifHeader = String.fromCharCode(
       dataView.getUint8(0),
@@ -53,7 +53,7 @@ const parseEXIFForGPS = (dataView: DataView): GeoInfo | null => {
   }
 };
 
-const findGPSIFD = (dataView: DataView, ifdOffset: number, isLittleEndian: boolean): GeoInfo | null => {
+export const findGPSIFD = (dataView: DataView, ifdOffset: number, isLittleEndian: boolean): GeoInfo | null => {
   try {
     const numEntries = isLittleEndian 
       ? dataView.getUint16(ifdOffset, true)
@@ -81,7 +81,7 @@ const findGPSIFD = (dataView: DataView, ifdOffset: number, isLittleEndian: boole
   }
 };
 
-const parseGPSData = (dataView: DataView, gpsOffset: number, isLittleEndian: boolean): GeoInfo | null => {
+export const parseGPSData = (dataView: DataView, gpsOffset: number, isLittleEndian: boolean): GeoInfo | null => {
   try {
     const gpsEntries = isLittleEndian 
       ? dataView.getUint16(gpsOffset, true)

@@ -4,6 +4,7 @@ import { TextField } from "@mui/material";
 import { AnimatePresence, motion } from "framer-motion";
 import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
 import AuthContext from "@/context/AuthContext";
+import { notifyProfileUpdated, type ProfileUpdateDetail } from "@/utils/profileEvents";
 
 const DEFAULT_BIO = "Archaeology enthusiast & digital volunteer";
 type ProfileModerationField = "name" | "bio";
@@ -322,6 +323,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             let latestUserData: any = null;
             let updatedName = currentName;
             let updatedBio = currentBio;
+            let updatedProfileImage: string | undefined;
+            let updatedCoverImage: string | undefined;
 
             if (isNameChanged || isBioChanged) {
                 const requestBody: { username?: string; bio?: string } = {};
@@ -341,7 +344,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 const profileImageResponse = await uploadProfileImage(profileImageFile);
                 latestUserData = extractUserData(profileImageResponse) ?? latestUserData;
                 if (latestUserData?.profileImage) {
-                    setProfileImage(latestUserData.profileImage);
+                    updatedProfileImage = latestUserData.profileImage;
+                    setProfileImage(updatedProfileImage);
                 }
             }
 
@@ -349,7 +353,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 const coverImageResponse = await uploadCoverImage(coverImageFile);
                 latestUserData = extractUserData(coverImageResponse) ?? latestUserData;
                 if (latestUserData?.coverImage) {
-                    setCoverImage(latestUserData.coverImage);
+                    updatedCoverImage = latestUserData.coverImage;
+                    setCoverImage(updatedCoverImage);
                 }
             }
 
@@ -367,6 +372,21 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 }
             }
 
+            const profileUpdate: ProfileUpdateDetail = {
+                username: updatedName,
+                name: updatedName,
+                bio: updatedBio,
+            };
+
+            if (updatedProfileImage !== undefined) {
+                profileUpdate.profileImage = updatedProfileImage;
+            }
+
+            if (updatedCoverImage !== undefined) {
+                profileUpdate.coverImage = updatedCoverImage;
+            }
+
+            notifyProfileUpdated(profileUpdate);
             onEditSuccess("Profile updated successfully!");
             setInputValue(updatedName || "");
             setBioInput(updatedBio || "");
@@ -425,6 +445,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
+                    data-testid="edit-profile-modal-backdrop"
                 >
                     <motion.div
                         className="bg-white p-6 rounded-lg shadow-xl flex flex-col gap-5 items-center w-96"

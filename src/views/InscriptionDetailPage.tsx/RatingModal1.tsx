@@ -9,7 +9,7 @@ interface RatingModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentRating: number;
-  onSubmitRating: (rating: number) => void;
+  onSubmitRating: (rating: number) => Promise<void>;
   onRatingSubmitted?: (success: boolean, message?: string) => void;
   postId: string
 }
@@ -24,23 +24,25 @@ const RatingModal: React.FC<RatingModalProps> = ({
 }) => {
   const [rating, setRating] = useState(currentRating);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    setError(null);
 
     try {
-      await onSubmitRating(rating); // Now parent handles API and state
-      if (onRatingSubmitted) {
-        onRatingSubmitted(true);
-      }
+      await onSubmitRating(rating);
+
+      onRatingSubmitted?.(
+        true,
+        "Rating submitted successfully."
+      );
+
       onClose();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to submit rating';
-      setError(errorMessage);
       if (onRatingSubmitted) {
-        onRatingSubmitted(false, errorMessage);
+        onRatingSubmitted?.(
+          false,
+          "Failed to submit rating."
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -48,7 +50,6 @@ const RatingModal: React.FC<RatingModalProps> = ({
   };
 
   const handleClose = () => {
-    setError(null);
     onClose();
   };
 
@@ -80,18 +81,12 @@ const RatingModal: React.FC<RatingModalProps> = ({
                 onRate={setRating}
               />
             </div>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-600 text-white rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
             <div className="flex gap-3">
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
                 className="flex-1 px-4 py-2 cursor-pointer bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                data-testid="submit-rating-btn"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Rating'}
               </button>

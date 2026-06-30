@@ -595,6 +595,8 @@ const CommentCard: React.FC<CommentCardProps> = ({
                         : 'text-gray-400 hover:text-blue-400 hover:bg-blue-900/20'
                         } ${(isLiking || isUpdating || isDeleting) ? 'opacity-60 cursor-not-allowed' : ''}`}
                       aria-label={isLiked ? 'Unlike comment' : 'Like comment'}
+                      id={`comment-like-${comments.id}`}
+                      aria-pressed={isLiked}
                     >
                       <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
                       <span className="font-medium">{likes}</span>
@@ -680,6 +682,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
                         onClick={handleStartEdit}
                         disabled={isDeleting || isUpdating}
                         className="text-gray-500 hover:text-blue-600 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                        id={`comment-edit-${comments.id}`}
                       >
                         <Pencil className="w-3 h-3" />
                         Edit
@@ -690,6 +693,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
                         onClick={handleOpenDeleteModal}
                         disabled={isDeleting || isUpdating}
                         className="text-gray-500 hover:text-red-600 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                        id={`comment-delete-${comments.id}`}
                       >
                         <Trash2 className="w-3 h-3" />
                         Delete
@@ -704,6 +708,8 @@ const CommentCard: React.FC<CommentCardProps> = ({
                     onClick={handleOpenReportModal}
                     disabled={isDeleting || isUpdating || isReporting}
                     className="text-gray-500 hover:text-red-600 disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                    id={`comment-report-${comments.id}`}
+                    data-testid={`comment-report-${comments._id}`}
                   >
                     <TriangleAlert className="w-3 h-3" />
                     Report

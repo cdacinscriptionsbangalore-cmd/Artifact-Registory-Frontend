@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
-import { ThumbsUp, MapPin, Calendar, Languages, BookOpen, Plus, MessageSquareWarning, Star, Trash, Edit, Check, TriangleAlert } from 'lucide-react';
+import {
+    // ThumbsUp, 
+    MapPin, Calendar, Languages, BookOpen, Plus, MessageSquareWarning,
+    // Star, 
+    Trash, Edit, Check, TriangleAlert
+} from 'lucide-react';
 import CommentCard from './CommentCard';
 // import RatingModal from './RatingModal';
 import { useBlocker, useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -34,7 +39,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import RatingModal1 from './RatingModal1';
 import cdacRoundLogo from '@/assets/cdacroundlogo.png';
 import type { User } from '@/types';
-import ShareModal from '@/components/ShareModal/ShareModal';
+// import ShareModal from '@/components/ShareModal/ShareModal';
 import { authStore } from '@/store/authStore';
 import { apiClient } from '@/utils/http/clients/backendApiClientGeneral';
 import { coreBackendClient } from '@/utils/http/clients/coreBackend.client';
@@ -46,8 +51,9 @@ import AuthContext from '@/context/AuthContext';
 import RatingStars from './RatingStars';
 import { MoreVert } from '@mui/icons-material';
 import AppImage from "@/components/AppImage";
+import { isMockDataEnabled } from '@/utils/feed/isMockDataEnabled';
 
-const USE_FALLBACK = false;
+const USE_FALLBACK = isMockDataEnabled();
 type ReportReasonOption = {
     label: string;
     value: string;
@@ -461,7 +467,7 @@ const InscriptionDetailsPage: React.FC = () => {
     const shouldBlockUnsavedCommentNavigation = useCallback(
         ({ currentLocation, nextLocation }) => {
             if (!hasUnsavedCommentEdits) return false;
-
+            console.log("Datatype is: ", typeof (currentLocation))
             return (
                 currentLocation.pathname !== nextLocation.pathname ||
                 currentLocation.search !== nextLocation.search ||
@@ -588,33 +594,54 @@ const InscriptionDetailsPage: React.FC = () => {
     }, [postId]);
 
     const submitRatingToAPI = async (postId: string, rating: number): Promise<string> => {
-
+        console.log("Before request");
         const urlencoded = new URLSearchParams();
         urlencoded.append("postId", postId);
         urlencoded.append("rating", rating.toString());
         const response = await coreBackendClient.post(`post/addRating`, urlencoded);
         const { data } = response.data;
+        console.log("Response:", response.data);
+        console.log(
+            JSON.stringify(response.data, null, 2)
+        );
         if (!data.ok) {
             throw new Error(`Error: ${response.statusText}`);
         }
         const result = await data.message; // or response.json() if backend returns JSON
+        console.log(response.data);
+        console.log(result);
+
         return result;
     };
 
 
 
     const handleRating = async (newRating: number) => {
+        console.log("handleRating called", newRating);
+
         setUserRating(newRating);
+
         try {
             await submitRatingToAPI(postId as string, newRating);
-            // Update post.rating in state so UI updates
-            setPost(prev => prev ? { ...prev, rating: newRating } : prev);
+            console.log("Success");
+
+            setPost(prev =>
+                prev
+                    ? { ...prev, rating: newRating }
+                    : prev
+            );
+
+            // handlePostSuccess("Rating submitted successfully.");
+
         } catch (error) {
-            console.error('Failed to submit rating:', error);
-            // Optionally show error to user
+
+            console.log("Catch", error);
+
+            // handlePostError("Failed to submit rating.");
+
+            throw error;
         }
     };
-
     const handleCommentEditDraftChange = useCallback((commentId: string, hasUnsavedDraft: boolean) => {
         if (!commentId) return;
 
@@ -639,6 +666,7 @@ const InscriptionDetailsPage: React.FC = () => {
 
     useEffect(() => {
         setIsDescriptionExpanded(false);
+        console.log("CONSOLE LOG IS WORKING")
     }, [post?._id, post?.description?.description]);
 
 
@@ -1165,7 +1193,7 @@ const InscriptionDetailsPage: React.FC = () => {
             try {
                 const dataUrl = await readFileAsDataUrl(file);
                 const isStone = await validateAndCheckStone(dataUrl);
-                
+
                 if (!isStone) {
                     errorMessages.push(`${file.name}: not a stone inscription`);
                     continue;
@@ -1372,11 +1400,10 @@ const InscriptionDetailsPage: React.FC = () => {
                             <div className="mb-4">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <p className="text-sm font-medium text-gray-800">Post Images</p>
-                                    <label className={`inline-flex items-center gap-2 rounded-md border border-orange-300 px-3 py-1.5 text-sm font-medium transition-colors ${
-                                        isCheckingImagesForUpload || isUpdatingPost
-                                            ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                                            : "bg-orange-100 text-orange-700 cursor-pointer hover:bg-orange-200"
-                                    }`}>
+                                    <label className={`inline-flex items-center gap-2 rounded-md border border-orange-300 px-3 py-1.5 text-sm font-medium transition-colors ${isCheckingImagesForUpload || isUpdatingPost
+                                        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                                        : "bg-orange-100 text-orange-700 cursor-pointer hover:bg-orange-200"
+                                        }`}>
                                         {isCheckingImagesForUpload ? (
                                             <>
                                                 <div className="w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
@@ -1635,6 +1662,9 @@ const InscriptionDetailsPage: React.FC = () => {
                 onClose={handleCloseReportPostModal}
                 fullWidth
                 maxWidth="xs"
+                id='report-post-modal'
+                data-testid="report-post-dialog"
+
             >
                 <DialogTitle>Report Post</DialogTitle>
                 <DialogContent>
@@ -1670,7 +1700,7 @@ const InscriptionDetailsPage: React.FC = () => {
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseReportPostModal} color="inherit" disabled={isReportingPost}>
+                    <Button onClick={handleCloseReportPostModal} color="inherit" disabled={isReportingPost} id='cancel-report-btn'>
                         Cancel
                     </Button>
                     <Button
@@ -1727,6 +1757,7 @@ const InscriptionDetailsPage: React.FC = () => {
                                     <button
                                         onClick={() => setShowRatingModal(true)}
                                         className="md:px-6 md:py-2 px-3 py-1 cursor-pointer bg-orange-500 border-1 border-orange-800 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
+                                        id='rate-post-btn'
                                     >
                                         Rate
                                     </button>
@@ -1783,7 +1814,7 @@ const InscriptionDetailsPage: React.FC = () => {
                                                         </MenuItem>,
                                                     ]
                                                 ) : (
-                                                    <MenuItem onClick={handleOpenReportPostFromMenu} disabled={isReportingPost} sx={{ color: "#dc2626" }}>
+                                                    <MenuItem onClick={handleOpenReportPostFromMenu} disabled={isReportingPost} sx={{ color: "#dc2626" }} id='report-post-btn'>
                                                         <TriangleAlert className="w-4 h-4 mr-2" />
                                                         Report Post
                                                     </MenuItem>
@@ -1948,6 +1979,7 @@ const InscriptionDetailsPage: React.FC = () => {
                             <button
                                 onClick={handleOpen}
                                 className="w-full text-sm px-2 sm:w-auto py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2 cursor-pointer"
+                                data-testid="add-transcription-btn"
                             >
                                 <Plus className="w-5 h-5" />
                                 <span className='pe-2'>

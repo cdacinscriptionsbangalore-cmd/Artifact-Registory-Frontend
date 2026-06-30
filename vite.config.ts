@@ -45,7 +45,6 @@ export default defineConfig({
     alias: {
       // 🔴 REQUIRED FOR MUI + styled-components
       '@mui/styled-engine': '@mui/styled-engine-sc',
-
       '@': path.resolve(__dirname, './src'),
       '@api': path.resolve(__dirname, './src/api'),
       '@assets': path.resolve(__dirname, './src/assets'),

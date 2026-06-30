@@ -6,6 +6,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { clearPostLoginRedirect, setPostLoginRedirect } from "@/utils/postLoginRedirect";
 import { Divider, Menu, MenuItem } from "@mui/material";
 import { coreBackendClient } from "@/utils/http/clients/coreBackend.client";
+import { PROFILE_UPDATED_EVENT, type ProfileUpdateDetail } from "@/utils/profileEvents";
 
 const backendApiUrl =
   window._env_?.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_API_URL;
@@ -65,6 +66,8 @@ const AuthButtons = ({ authenticated }: { authenticated: boolean | null }) => {
           setUserData(user);
           if (user?.profileImage) {
             setUserProfileImage(normalizeUserImageUrl(user.profileImage));
+          } else {
+            setUserProfileImage("");
           }
         } catch (error) {
           console.error("Failed to fetch user profile:", error);
@@ -74,8 +77,30 @@ const AuthButtons = ({ authenticated }: { authenticated: boolean | null }) => {
       };
 
       fetchUserProfile();
+    } else {
+      setUserData(null);
+      setUserProfileImage("");
     }
   }, [authenticated]);
+
+  useEffect(() => {
+    const handleProfileUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<ProfileUpdateDetail>).detail;
+      if (!detail) return;
+
+      setUserData((currentUser: any) => ({
+        ...(currentUser || {}),
+        ...detail,
+      }));
+
+      if ("profileImage" in detail) {
+        setUserProfileImage(normalizeUserImageUrl(detail.profileImage));
+      }
+    };
+
+    window.addEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdated);
+    return () => window.removeEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdated);
+  }, []);
 
   const handleOpenAuthMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAuthMenuAnchorEl(event.currentTarget);

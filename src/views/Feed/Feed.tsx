@@ -9,9 +9,10 @@ import { SearchX } from 'lucide-react';
 // import { CircularProgress } from '@mui/material';
 import { coreBackendClient } from '@/utils/http/clients/coreBackend.client';
 import { useSearchParams } from 'react-router-dom';
+import { isMockDataEnabled } from '@/utils/feed/isMockDataEnabled';
 // import { getTokenFromCookie } from '@/utils/cookieUtils';
 
-const isOffline = false;   // true => use mock data, false => use API
+const isOffline = isMockDataEnabled();   // true => use mock data, false => use API
 const getPageFromParams = (params: URLSearchParams) => {
   const pageParam = Number(params.get('page'));
   return Number.isFinite(pageParam) && pageParam > 0 ? Math.floor(pageParam) : 1;

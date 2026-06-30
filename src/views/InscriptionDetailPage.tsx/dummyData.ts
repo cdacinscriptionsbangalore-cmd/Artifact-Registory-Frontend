@@ -113,6 +113,33 @@ type CommentSeed = {
 
 const COMMENT_SEEDS: CommentSeed[] = [
     {
+        username: "Ambika Choudhary",
+        userId: "user123",
+        userImageUrl: placeholderImage1,
+        description:
+            "The script appears to be an early Kannada inscription.",
+        upvote: 4,
+        userVote: [],
+    },
+    {
+        username: "Ambika Choudhary",
+        userId: "user123",
+        userImageUrl: placeholderImage1,
+        description:
+            "The damaged section may contain a royal title.",
+        upvote: 7,
+        userVote: [],
+    },
+    {
+        username: "Ambika Choudhary",
+        userId: "user123",
+        userImageUrl: placeholderImage1,
+        description:
+            "This inscription should be compared with nearby Chola records.",
+        upvote: 3,
+        userVote: [],
+    },
+    {
         username: "Aditi Rao",
         userId: "dummy-user-01",
         userImageUrl: placeholderImage1,
@@ -210,25 +237,35 @@ const COMMENT_SEEDS: CommentSeed[] = [
     },
 ];
 
-const createDummyComment = (postId: string, seed: CommentSeed, index: number): Comment => {
+const createDummyComment = (
+    postId: string,
+    seed: CommentSeed,
+    index: number
+): Comment => {
+
     const hoursAgo = index * 3;
-    const createdAt = new Date(Date.now() - hoursAgo * 60 * 60 * 1000);
+    const createdAt = new Date(
+        Date.now() - hoursAgo * 60 * 60 * 1000
+    );
 
     return {
         id: `dummy-comment-${postId}-${index + 1}`,
         _id: `dummy-comment-${postId}-${index + 1}`,
         postId,
+
         userId: seed.userId,
         username: seed.username,
-        userImageUrl: seed.userImageUrl,
-        createdAt,
-        updatedAt: createdAt,
         description: seed.description,
+
         upvote: seed.upvote,
         userVote: seed.userVote,
+
+        userImageUrl: seed.userImageUrl,
+
+        createdAt,
+        updatedAt: createdAt,
     };
 };
-
 export const dummyCommentsByPostId: Record<string, Comment[]> = FALLBACK_POST_IDS.reduce((acc, postId, postIndex) => {
     const baseIndex = postIndex * 2;
     const postComments = Array.from({ length: 4 }, (_, offset) => {

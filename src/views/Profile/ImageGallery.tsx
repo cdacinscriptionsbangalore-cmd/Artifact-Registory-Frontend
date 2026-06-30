@@ -25,7 +25,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ posts }) => {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {displayPosts.map((post) => (
-          <NavLink to={`https://inscriptions.cdacb.in/feed/${post._id}`} key={post._id} className="cursor-pointer">
+          <NavLink to={`/feed/${post._id}`} key={post._id} className="cursor-pointer">
             <div key={post._id} className="relative group cursor-pointer">
               <div className="aspect-square bg-secondary-background rounded-lg overflow-hidden">
                 <img
