@@ -4,6 +4,7 @@ import { authStore } from "@/store/authStore";
 import { authClient } from "@/utils/http/clients/authClient.client";
 import { apiClient } from "@/utils/http/clients/backendApiClientGeneral";
 import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
+import { isMockAuthEnabled } from "@/utils/auth/isMockEnabled";
 
 const DEV_BYPASS_AUTH = false;
 
@@ -126,6 +127,15 @@ export const AuthProvider = (props: { children: React.ReactNode }) => {
     if (DEV_BYPASS_AUTH) {
       return;
     }
+    if (isMockAuthEnabled()) {
+      console.log("[MOCK AUTH] Enabled");
+      authStore.setToken("mock-playwright-token");
+      setIsAuthenticated(true);
+      setIsLoading(false);
+
+      return;
+    }
+
     const bootstrap = async () => {
       setIsLoading(true);
       try {

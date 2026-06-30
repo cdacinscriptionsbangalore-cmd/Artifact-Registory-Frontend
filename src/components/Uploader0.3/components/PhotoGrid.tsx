@@ -1,6 +1,7 @@
 import CircularProgess from "@/components/Spinner/CircularProgess";
 import { RefreshCcw, RotateCw, Trash2 } from "lucide-react";
 import { Tooltip } from "@mui/material";
+import { useEffect, useRef, useState } from "react";
 
 interface PhotoGridProps {
   photos: string[];
@@ -9,17 +10,60 @@ interface PhotoGridProps {
   onRotatePhoto: (index: number) => void;
 }
 
+const useActualOverflow = <T extends HTMLElement>(dependency: number) => {
+  const ref = useRef<T | null>(null);
+  const [hasOverflow, setHasOverflow] = useState(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) {
+      setHasOverflow(false);
+      return;
+    }
+
+    const updateOverflowState = () => {
+      setHasOverflow(element.scrollHeight > element.clientHeight + 1);
+    };
+
+    updateOverflowState();
+    window.addEventListener("resize", updateOverflowState);
+
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(updateOverflowState);
+
+    resizeObserver?.observe(element);
+    Array.from(element.children).forEach((child) => resizeObserver?.observe(child));
+
+    return () => {
+      window.removeEventListener("resize", updateOverflowState);
+      resizeObserver?.disconnect();
+    };
+  }, [dependency]);
+
+  return { ref, hasOverflow };
+};
+
 export const PhotoGrid = ({
   photos,
   onReset,
   onRemovePhoto,
   onRotatePhoto,
-}: PhotoGridProps) => (
-  <div className="w-full flex flex-col gap-4">
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-2 border-dashed border-gray-600 rounded-lg p-4 min-h-[180px] max-h-[520px] overflow-y-auto overscroll-contain">
+}: PhotoGridProps) => {
+  const photoGridOverflow = useActualOverflow<HTMLDivElement>(photos.length);
+
+  return (
+    <div className="w-full flex flex-col gap-4">
+      <div
+        ref={photoGridOverflow.ref}
+        className={`grid grid-cols-2 sm:grid-cols-4 gap-3 border-2 border-dashed border-gray-600 rounded-lg p-4 min-h-[180px] max-h-[520px] ${
+          photoGridOverflow.hasOverflow ? "overflow-y-auto" : "overflow-visible"
+        }`}
+      >
       {photos.length > 0 ? (
         photos.map((photo, idx) => (
-          <div key={idx} className="relative group h-32">
+          <div key={idx} id={`test-image-${idx}`} className="relative group h-32">
             <Tooltip
               placement="top"
               arrow
@@ -67,18 +111,19 @@ export const PhotoGrid = ({
           <CircularProgess size={40} />
         </div>
       )}
+      </div>
+
+      <span className="text-sm text-center text-gray-500" style={{ width: "100%" }}>
+        {photos.length > 0 ? photos.length : "No"} photos selected for upload
+      </span>
+
+      <button
+        onClick={onReset}
+        className="cursor-pointer w-full px-4 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition w-full px-6 py-4 text-white rounded-lg font-medium transition flex items-center justify-center gap-2"
+      >
+        <RefreshCcw className="inline mr-2" />
+        Reset
+      </button>
     </div>
-
-    <span className="text-sm text-center text-gray-500" style={{ width: "100%" }}>
-      {photos.length > 0 ? photos.length : "No"} photos selected for upload
-    </span>
-
-    <button
-      onClick={onReset}
-      className="cursor-pointer w-full px-4 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition w-full px-6 py-4 text-white rounded-lg font-medium transition flex items-center justify-center gap-2"
-    >
-      <RefreshCcw className="inline mr-2" />
-      Reset
-    </button>
-  </div>
-);
+  );
+};

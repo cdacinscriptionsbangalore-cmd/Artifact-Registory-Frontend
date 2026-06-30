@@ -3,9 +3,18 @@
     "resolveJsonModule": true,
     "esModuleInterop": true
   },
+  "include": [
+    "src/**/*",
+    "tests/**/*", // Add this line (or "e2e/**/*" depending on your folder name)
+    "**/*.spec.ts" // Alternately, include all spec files globally
+  ],
   "files": [],
   "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
   ]
 }

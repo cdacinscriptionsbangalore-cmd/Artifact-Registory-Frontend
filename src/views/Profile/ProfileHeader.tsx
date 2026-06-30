@@ -131,7 +131,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
         </Alert>
       </Snackbar>
       <div className="flex flex-col items-center z-20" style={{ position: "absolute", bottom: 0, left: "50%", transform: "translate(-50%, 78%)", backgroundColor: "none" }}>
-        <div className="relative">
+        <div className="relative" data-testid="profile-avatar">
           {profileImage ? (
             <img
               src={profileImage}

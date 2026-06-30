@@ -45,7 +45,7 @@ const HeroSection = () => {
                                     <Upload className="inline w-5 h-5" />
                                     Upload Inscription
                                 </NavLink>
-                                <NavLink to="/feed" className="flex items-center gap-2 bg-slate-800/50 border border-slate-600 hover:bg-slate-700/50 px-8 py-4 rounded-xl font-semibold text-lg transition-all backdrop-blur-sm ">
+                                <NavLink data-testid="hero-explore-btn" to="/feed" className="flex items-center gap-2 bg-slate-800/50 border border-slate-600 hover:bg-slate-700/50 px-8 py-4 rounded-xl font-semibold text-lg transition-all backdrop-blur-sm ">
                                     <TravelExploreOutlinedIcon />
                                     Explore Collection
                                 </NavLink>
@@ -87,7 +87,7 @@ const HeroSection = () => {
 
                             {/* CTA Buttons */}
                             <div className="flex flex-col sm:flex-row gap-4 justify-center text-primary-text">
-                                <NavLink to="/upload" className="flex justify-center items-center gap-2 bg-primary px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 shadow-lg">
+                                <NavLink data-testid="hero-upload-btn" to="/upload" className="flex justify-center items-center gap-2 bg-primary px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 shadow-lg">
                                     <Upload className="inline w-5 h-5" />
                                     Upload Inscription
                                 </NavLink>

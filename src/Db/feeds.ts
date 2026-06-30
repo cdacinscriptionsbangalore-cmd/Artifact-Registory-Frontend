@@ -2,7 +2,7 @@
 // import inscription2 from "@assets/inscriptions/inscript2.png";
 // import inscription3 from "@assets/inscriptions/inscript3.png";
 
-const mockDiscoveryPosts = {
+export const mockDiscoveryPosts = {
     "data": [
         {
             "_id": "69118753d23e86bbb9cb8ce7",
@@ -588,10 +588,9 @@ const mockDiscoveryPosts = {
             "createdAt": "2025-11-13T06:22:34.197+00:00",
             "updatedAt": "2025-11-17T06:32:47.730+00:00",
             "images": {
-                "thumbnailImage": "https://mapacademy.io/wp-content/uploads/2022/09/ashoka-edicts-2m.jpg",
+                "thumbnailImage": "https://pbs.twimg.com/media/EKr-mQnUcAAY_Uh.jpg",
                 "image": [
-                    "https://mapacademy.io/wp-content/uploads/2022/09/ashoka-edicts-2m.jpg"
-                ]
+                    "https://pbs.twimg.com/media/EKr-mQnUcAAY_Uh.jpg"]
             },
             "description": {
                 "title": "Mauryan inscription",

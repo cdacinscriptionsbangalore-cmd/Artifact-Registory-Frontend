@@ -45,6 +45,7 @@ const StarRating: React.FC<StarRatingProps> = ({ rating, size = "w-5 h-5", inter
             onClick={() => handleClick(index)}
             onMouseEnter={() => interactive && setHoverRating(index + 1)}
             onMouseLeave={() => interactive && setHoverRating(0)}
+            data-testid={`rating-star-${index + 1}`}
           />
         );
       })}
@@ -54,34 +55,3 @@ const StarRating: React.FC<StarRatingProps> = ({ rating, size = "w-5 h-5", inter
 };
 
 export default StarRating;
-
-// API service for rating
-const submitRatingToAPI = async (postId: string, rating: number): Promise<string> => {
-  const myHeaders = new Headers();
-  myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
-  myHeaders.append("Authorization", "Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoidXNlciIsImV4cCI6MTc1NzA1MjE5OSwidXNlciI6Im5pbmpha2Fua2FpMUBnbWFpbC5jb20iLCJpYXQiOjE3NTY5NjU3OTl9.58fo0J8OVPL53fZeK0sgVvGzbSxSGg8p0tq0gtKJPwc");
-
-  const urlencoded = new URLSearchParams();
-  urlencoded.append("postId", postId);
-  urlencoded.append("rating", rating.toString());
-
-  const requestOptions: RequestInit = {
-    method: "POST",
-    headers: myHeaders,
-    body: urlencoded,
-    redirect: "follow"
-  };
-
-  try {
-    const response = await coreBackendClient.post(`${backendApiUrl}post/addRating`);
-    if (!response.data.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const result = await response.data.text();
-    return result;
-  } catch (error) {
-    console.error('Error submitting rating:', error);
-    throw error;
-  }
-};
-

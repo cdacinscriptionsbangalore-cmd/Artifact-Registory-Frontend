@@ -57,6 +57,7 @@ const SuggestionControls: React.FC<SuggestionControlsProps> = ({
         <button
           onClick={handleUseSuggestion}
           className="flex items-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm"
+          data-testid="use-suggestion-button"
         >
           <Check />
           <span>

@@ -21,7 +21,7 @@ const CallToAction: React.FC = () => {
                             Every contribution helps preserve our shared human heritage.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <NavLink to="/upload" className="flex justify-center items-center gap-2 bg-primary px-8 py-4 rounded-xl font-semibold text-lg transition-all text-primary-text transform hover:scale-105 shadow-lg">
+                            <NavLink data-testid="cta-contribute-btn" to="/upload" className="flex justify-center items-center gap-2 bg-primary px-8 py-4 rounded-xl font-semibold text-lg transition-all text-primary-text transform hover:scale-105 shadow-lg">
                                 <VolunteerActivismOutlinedIcon />
                                 Start Contributing
                             </NavLink>
