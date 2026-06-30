@@ -69,7 +69,7 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ comments }) => {
         </div>
         <div className="space-y-4">
           {displayPosts.map((post) => (
-            <NavLink to={`https://inscriptions.cdacb.in/feed/${post.postId}`} key={post._id} className="cursor-pointer">
+            <NavLink to={`/feed/${post.postId}`} key={post._id} className="cursor-pointer">
               <div className="bg-secondary-background rounded-lg p-4">
                 <div className="flex gap-4">
                   <img
@@ -113,7 +113,7 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ comments }) => {
     <div className="mb-6 mt-2 p-4">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" >
         {displayPosts.length !== 0 && displayPosts.map((post) => (
-          <NavLink to={`https://inscriptions.cdacb.in/feed/${post.postId}`} key={post._id} className="cursor-pointer" >
+          <NavLink to={`/feed/${post.postId}`} key={post._id} className="cursor-pointer" >
             <div className="card-styling rounded-lg p-4" >
               <div className="flex justify-between space-x-3 " >
                 <div className="">

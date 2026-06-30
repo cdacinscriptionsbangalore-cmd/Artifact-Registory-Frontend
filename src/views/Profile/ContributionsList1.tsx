@@ -69,8 +69,9 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ comments }) => {
 
                     <NavLink
                         key={post._id}
-                        to={`https://inscriptions.cdacb.in/feed/${post.postId}`}
+                        to={`/feed/${post.postId}`}
                         className="h-full"
+                        data-testid="profile-comment-card"
                     >
 
                         <div className="card-styling rounded-lg p-4 h-full min-h-[120px] flex flex-col">

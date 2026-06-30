@@ -30,12 +30,12 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
 
   return (
     <div className="navbar-gradient z-999">
-      <Nav2/>
+      <Nav2 />
       <DesktopHeader />
       <hr className="border-t border-gray-300 " />
       <nav className={`top-0 z-50 text-secondary-text navbar-shadow ${scrollPosition > 200 ? "navscrollbehavior w-100C" : "w-100C"}`}  >
         <div className="flex justify-between items-center h-16 px-6">
-          <div className="hidden md:flex justify-start space-x-6 header-links header-link-items hide-these-mobile-view " style={{ height: "100%"}}>
+          <div className="hidden md:flex justify-start space-x-6 header-links header-link-items hide-these-mobile-view " style={{ height: "100%" }}>
             {linksToShow.map((link) => (
               <NavLink
                 to={link.path}
@@ -58,7 +58,7 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
             {mobileNavbarOpen ? (
               <X className="text-white" onClick={toggleMobileNavbar} />
             ) : (
-              <Menu className="hamburger-icon text-white" onClick={toggleMobileNavbar} />
+              <Menu className="hamburger-icon text-white" onClick={toggleMobileNavbar} data-testid="mobile-menu-btn" />
             )}
           </div>
 
@@ -66,7 +66,7 @@ const Nav: React.FC<NavProps> = ({ scrollToSection }) => {
         </div>
 
         {(mobileNavbarOpen || isClosing) && (
-          <div className={`mobile-navbar pt-10 space-y-8 flex flex-col items-center text-white ${isClosing ? "mobile-navbar-closing" : ""}`} style={{height:"100vh",borderTop: "2px solid #ccc", zIndex: 9999999  }}>
+          <div className={`mobile-navbar pt-10 space-y-8 flex flex-col items-center text-white ${isClosing ? "mobile-navbar-closing" : ""}`} style={{ height: "100vh", borderTop: "2px solid #ccc", zIndex: 9999999 }} data-testid="mobile-nav-menu">
             {linksToShow.map((link) => (
               <NavLink
                 to={link.path}

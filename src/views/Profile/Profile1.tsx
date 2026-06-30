@@ -4,8 +4,9 @@ import { useContext, useEffect, useState } from "react";
 import ProfileLoader from "./ProfileLoader";
 import ProfileUI from "./ProfileUI";
 import { mockUser, mockPosts, mockComments } from "@/Db/userProfile";
+import { isMockDataEnabled } from "@/utils/feed/isMockDataEnabled";
 
-const USE_FALLBACK = false;
+const USE_FALLBACK = isMockDataEnabled();
 
 const Profile: React.FC = () => {
   const { isLoading: authLoading } = useContext(AuthContext);

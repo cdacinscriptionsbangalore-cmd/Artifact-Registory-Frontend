@@ -273,6 +273,11 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
                                 error={!!errorMsg}
                                 helperText={errorMsg || `${inputValue.length}/200`}
                                 FormHelperTextProps={{ style: { margin: 0 } }}
+                                slotProps={{
+                                    htmlInput: {
+                                        "data-testid": "add-transcription-text-input",
+                                    },
+                                }}
                             />
                         </div>
 
@@ -281,6 +286,7 @@ const Model: React.FC<ModelProps> = ({ postId, display, onClose, onDescriptionAd
                                 onClick={handlePost}
                                 disabled={isSubmitting}
                                 className="ml-2 cursor-pointer bg-orange-400 text-white px-3 py-1 rounded disabled:opacity-60"
+                                data-testid="post-transcription-btn"
                             >
                                 {isSubmitting ? "Posting..." : "Post"}
                             </button>

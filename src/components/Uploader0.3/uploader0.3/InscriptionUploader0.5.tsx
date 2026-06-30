@@ -36,8 +36,9 @@ import { extractCoordinates } from "../Services/ocrService";
 import { suggestionApiClient } from "@/utils/http/clients/suggestionApi.client";
 import piexifjs from "piexifjs";
 import { normalizeCoordinate } from "./utils/normalizeCoordinate";
+import { isMockAuthEnabled } from "@/utils/auth/isMockEnabled";
 
-const isOnline = true; // true => validate with AI, false => skip AI validation only
+const isOnline = isMockAuthEnabled()?false:true; // true => validate with AI, false => skip AI validation only
 const MAX_IMAGES = 20;
 
 interface ImageItem {
@@ -315,6 +316,64 @@ const buildGpsStatusMessage = (
   }
 
   return `${fileName}: GPS location successfully obtained (${coordinateText})`;
+};
+
+const useActualOverflow = <T extends HTMLElement>(
+  dependencies: React.DependencyList
+) => {
+  const ref = useRef<T | null>(null);
+  const [hasOverflow, setHasOverflow] = useState(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) {
+      setHasOverflow(false);
+      return;
+    }
+
+    const updateOverflowState = () => {
+      setHasOverflow(element.scrollHeight > element.clientHeight + 1);
+    };
+
+    updateOverflowState();
+    window.addEventListener("resize", updateOverflowState);
+
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(updateOverflowState);
+
+    resizeObserver?.observe(element);
+    Array.from(element.children).forEach((child) => resizeObserver?.observe(child));
+
+    return () => {
+      window.removeEventListener("resize", updateOverflowState);
+      resizeObserver?.disconnect();
+    };
+  }, dependencies);
+
+  return { ref, hasOverflow };
+};
+
+interface OverflowAwareGridProps {
+  className: string;
+  children: React.ReactNode;
+}
+
+const OverflowAwareGrid = ({ className, children }: OverflowAwareGridProps) => {
+  const childCount = React.Children.count(children);
+  const gridOverflow = useActualOverflow<HTMLDivElement>([childCount]);
+
+  return (
+    <div
+      ref={gridOverflow.ref}
+      className={`${className} ${
+        gridOverflow.hasOverflow ? "overflow-y-auto" : "overflow-visible"
+      }`}
+    >
+      {children}
+    </div>
+  );
 };
 
 const EnhancedInscriptionUploaderV5: React.FC = () => {
@@ -1098,7 +1157,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
               />
             ) : ungroupedImages.length > 0 ? (
               <div className="space-y-4 w-full">
-                <div className="grid grid-cols-2 md:grid-cols-4 auto-rows-[8rem] gap-3 border-2 border-dashed border-gray-600 rounded-lg p-4 min-h-[380px] max-h-[520px] overflow-y-auto overscroll-contain">
+                <OverflowAwareGrid className="grid grid-cols-2 md:grid-cols-4 auto-rows-[8rem] gap-3 border-2 border-dashed border-gray-600 rounded-lg p-4 min-h-[380px] max-h-[520px]">
                   {ungroupedImages.map((image, index) => (
                     <div key={image.id} className="relative group h-32 w-full">
                       <Tooltip
@@ -1143,7 +1202,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                </div>
+                </OverflowAwareGrid>
 
                 <span className="text-sm text-center text-gray-500 block">
                   {ungroupedImages.length} photo{ungroupedImages.length === 1 ? "" : "s"} selected
@@ -1204,7 +1263,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                 <span className="text-sm text-gray-600">Total Images: {totalImages} / 20</span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-2 border-dashed border-gray-300 rounded-lg p-3 min-h-[380px] max-h-[493px] overflow-y-auto overscroll-contain ">
+              <OverflowAwareGrid className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-2 border-dashed border-gray-300 rounded-lg p-3 min-h-[380px] max-h-[493px]">
                 {ungroupedImages.length > 0 ? (
                   ungroupedImages.map((image, index) => (
                     <label key={image.id} className="relative block cursor-pointer h-28">
@@ -1230,6 +1289,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
 
                         <img
                           src={image.preview}
+                          id={`Ungrouped ${index + 1}`}
                           alt={`Ungrouped ${index + 1}`}
                           className="w-full h-full object-cover rounded-md"
                         />
@@ -1241,7 +1301,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                     No ungrouped images yet
                   </div>
                 )}
-              </div>
+              </OverflowAwareGrid>
               <div className="flex gap-2">
 
                 <button
@@ -1290,7 +1350,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border-2 border-dashed border-gray-300 rounded-lg p-3 min-h-[120px] max-h-[420px] overflow-y-auto overscroll-contain">
+                      <OverflowAwareGrid className="grid grid-cols-2 sm:grid-cols-3 gap-3 border-2 border-dashed border-gray-300 rounded-lg p-3 min-h-[120px] max-h-[420px]">
                         {group.images.length > 0 ? (
                           group.images.map((image, index) => (
                             <label key={image.id} className="relative block cursor-pointer h-28">
@@ -1327,7 +1387,7 @@ const EnhancedInscriptionUploaderV5: React.FC = () => {
                             No images in this group
                           </div>
                         )}
-                      </div>
+                      </OverflowAwareGrid>
 
                       <div className="mt-3">
                         <button
