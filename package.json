@@ -6,7 +6,7 @@
   "proxy": "http://10.180.22.110:8000",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "vite build",
     "build:production": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

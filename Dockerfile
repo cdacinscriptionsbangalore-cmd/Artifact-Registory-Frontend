@@ -2,12 +2,14 @@
 ARG NODE_VERSION=22.13.1
 FROM node:${NODE_VERSION}-slim AS base
 
-RUN npm install -g pnpm@9
+# RUN npm install -g pnpm@9
+RUN npm install -g pnpm@11.3.0
 WORKDIR /app
 
 # Build
 FROM base AS build
 COPY . .
+# RUN pwd && ls -la && false
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build
 
